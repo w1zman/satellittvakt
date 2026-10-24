@@ -970,7 +970,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   // ---------- northern lights: NOAA SWPC (OVATION, Kp, solar wind) + MET Norway (clouds), fetched live in the browser ----------
   const AUR = { grid: null, ovObs: null, ovFc: null, kp: null, kpTime: null, kpfc: [], bz: null, bt: null, speed: null, swTime: null, met: [], err: {}, pN: null, pSky: null, skyDir: null };
   let showAurora = true;
-  const aurUni = (px) => ({ uPx: { value: px }, uFade: { value: 1 }, uMax: { value: 70 } });
+  const aurUni = (px) => ({ uPx: { value: px }, uFade: { value: 1 }, uMax: { value: 120 } });
   const AUR_VS = 'attribute vec4 aCol; attribute float aAng; uniform float uPx; uniform float uMax; varying vec4 vCol; void main(){ vCol = aCol; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = clamp(aAng * uPx, 1.5, uMax); }';
   const AUR_FS = 'varying vec4 vCol; uniform float uFade; void main(){ vec2 p = gl_PointCoord - 0.5; float d = dot(p, p); float a = exp(-d * 14.0) * vCol.a * uFade; if (a < 0.003) discard; gl_FragColor = vec4(vCol.rgb * a, a); }';
   const aurDomeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400), vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
@@ -998,8 +998,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         if (el < -1) continue;
         if (h === 1 && el >= 12 && p > pSky) { pSky = p; let az = Math.atan2(v[0], v[1]) / D2R; skyAz = az < 0 ? az + 360 : az; }
         const q = toDome(v[0] / L, v[1] / L, v[2] / L, R * 0.955); P.push(q.x, q.y, q.z);
-        const a = Math.min(1, p / 32) * HF[h], c = HCOL[h]; C.push(c[0], c[1], c[2], a);
-        A.push(Math.min(0.5, 95 / L));
+        const ext = 0.22 + 0.78 * Math.min(1, Math.max(0, el) / 25);
+        const a = Math.min(1, p / 32) * HF[h] * ext, c = HCOL[h]; C.push(c[0], c[1], c[2], a);
+        A.push(Math.min(0.7, 150 / L));
       }
     }
     AUR.pSky = pSky; AUR.skyDir = skyAz;
