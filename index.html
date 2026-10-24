@@ -170,21 +170,33 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 .bars .m { align-self: center; }
 .src { font-size: 11.5px; color: var(--mist); margin: 0; }
 .src a { color: var(--frost); }
+
+.toprow { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.place { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+.place button { font: 600 13px var(--f-body); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.place button[aria-pressed="true"] { background: var(--sun); color: var(--ink); }
+.place button:hover:not([aria-pressed="true"]) { color: var(--frost); }
 @media (prefers-reduced-motion: reduce) { .livepill i { animation: none; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">Narvik 68,44° N 17,43° Ø · himmelen i sanntid</div>
-    <h1><span>Satellitter over <em>Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt">Live</span></span></h1>
+    <div class="toprow">
+      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68,44° N 17,43° Ø</span> · himmelen i sanntid</div>
+      <div class="place" role="group" aria-label="Velg sted">
+        <button type="button" data-place="narvik" aria-pressed="true">Narvik</button>
+        <button type="button" data-place="tromso" aria-pressed="false">Tromsø</button>
+      </div>
+    </div>
+    <h1><span>Satellitter over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt">Live</span></span></h1>
     <p class="lede">Lyspunktene er satellitter og rakettrinn som står i sollys over byen akkurat nå, og det grønne skjæret er nordlysvarselet fra NOAA. Dra for å snu bildet, klyp eller rull for å zoome, og trykk på et lyspunkt eller en rad i lista.</p>
   </header>
 
   <div class="main">
     <section class="stagecol" aria-label="3D-visning">
       <div class="stage" id="stage">
-        <canvas id="cv" aria-label="3D-visning av satellitter over Narvik"></canvas>
+        <canvas id="cv" aria-label="3D-visning av satellitter"></canvas>
         <div class="loading" id="loading">Henter banedata …</div>
         <div class="modes" role="group" aria-label="Visning">
           <button type="button" id="m-dome" aria-pressed="true">Himmelen</button>
@@ -229,9 +241,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         <div class="aurhead"><h2>Nordlys nå</h2><span class="verdict wait" id="a-verdict">Henter …</span></div>
         <p id="a-summary">Henter data fra NOAA og Meteorologisk institutt …</p>
         <div class="astats">
-          <div class="stat"><b id="a-prob">–</b><span>sannsynlighet over Narvik</span></div>
+          <div class="stat"><b id="a-prob">–</b><span>sannsynlighet over <span class="pname">Narvik</span></span></div>
           <div class="stat"><b id="a-kp">–</b><span>Kp-indeks nå</span></div>
-          <div class="stat"><b id="a-cloud">–</b><span>skydekke i Narvik</span></div>
+          <div class="stat"><b id="a-cloud">–</b><span>skydekke i <span class="pname">Narvik</span></span></div>
         </div>
         <dl class="kv" id="a-wind"></dl>
         <div class="mini"><h3>Kp-varsel, neste 24 timer</h3><div class="bars" id="a-kpfc"></div></div>
@@ -413,8 +425,15 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   const O = window.ORB, D2R = Math.PI / 180, RE = 6378.137;
   const $ = id => document.getElementById(id);
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const LAT = 68.4385, LON = 17.4273, OBS = O.geodeticToEcef(LAT, LON, 0.02);
-  const sLa = Math.sin(LAT * D2R), cLa = Math.cos(LAT * D2R), sLo = Math.sin(LON * D2R), cLo = Math.cos(LON * D2R);
+  const PLACES = { narvik: { key: 'narvik', name: 'Narvik', lat: 68.4385, lon: 17.4273, h: 0.02 }, tromso: { key: 'tromso', name: 'Tromsø', lat: 69.6496, lon: 18.9560, h: 0.02 } };
+  let PLACE, LAT, LON, OBS, sLa, cLa, sLo, cLo;
+  function setObserver(key) {
+    PLACE = PLACES[key] || PLACES.narvik; LAT = PLACE.lat; LON = PLACE.lon; OBS = O.geodeticToEcef(LAT, LON, PLACE.h);
+    sLa = Math.sin(LAT * D2R); cLa = Math.cos(LAT * D2R); sLo = Math.sin(LON * D2R); cLo = Math.cos(LON * D2R);
+  }
+  const initialPlace = (() => { const h = (location.hash || '').replace('#', '').toLowerCase(); if (PLACES[h]) return h;
+    try { const v = localStorage.getItem('sv-place'); if (PLACES[v]) return v; } catch (e) {} return 'narvik'; })();
+  setObserver(initialPlace);
   const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const num = (x, d = 0) => x.toFixed(d).replace('.', ',').replace('-', '−');
   const DIRS = ['N', 'NNØ', 'NØ', 'ØNØ', 'Ø', 'ØSØ', 'SØ', 'SSØ', 'S', 'SSV', 'SV', 'VSV', 'V', 'VNV', 'NV', 'NNV'];
@@ -539,7 +558,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     s.userData.compass = az; domeG.add(s);
   });
   [10, 30, 60].forEach(el => { const s = makeLabel(el + '°', { px: 48, h: 0.5, color: '#8d9cb5', family: '"JetBrains Mono", monospace', weight: '400' }); s.position.copy(toDome(0, -Math.cos(el * D2R), Math.sin(el * D2R), R + 0.05)).add(new THREE.Vector3(0.45, 0.2, 0)); domeG.add(s); });
-  const narvikLbl = makeLabel('Narvik', { px: 56, h: 0.55, color: '#ffc66b' }); narvikLbl.position.set(0, 0.7, 0); domeG.add(narvikLbl);
+  const narvikLbl = makeLabel(PLACE.name, { px: 56, h: 0.55, color: '#ffc66b' }); narvikLbl.position.set(0, 0.7, 0); domeG.add(narvikLbl);
 
   // stars (J2000 RA/Dec deg, magnitude, labelled)
   const STARS = [
@@ -615,20 +634,31 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     globeG.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0x8d9cb5, 0.13)));
     const ac = []; for (let lo = 0; lo <= 360; lo += 2) ac.push(geoV(66.56, lo, 1.003));
     const acl = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ac), new THREE.LineDashedMaterial({ color: 0x9fd6ff, transparent: true, opacity: 0.45, dashSize: 0.02, gapSize: 0.015 })); acl.computeLineDistances(); globeG.add(acl); }
-  const CITIES = [['Narvik', 68.4385, 17.4273, 1], ['Tromsø', 69.649, 18.955], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
+  const CITIES = [['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
     ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['Nordpolen', 90, 0]];
   { const cp = new Float32Array(CITIES.length * 3), cs = new Float32Array(CITIES.length), cc = new Float32Array(CITIES.length * 4);
     CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = c[3] ? 9 : 4.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
       const l = makeLabel(c[0], { px: 48, h: c[3] ? 0.075 : 0.05, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
-      l.position.copy(geoV(c[1], c[2], 1.035)); l.position.y += 0.012; globeG.add(l); });
+      l.position.copy(geoV(c[1], c[2], 1.035)); l.position.y += 0.012; l.userData.city = c[0]; globeG.add(l); });
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(cp, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(cs, 1)); g.setAttribute('aCol', new THREE.BufferAttribute(cc, 4));
     const m = ptMat(); m.depthTest = true; globeG.add(new THREE.Points(g, m)); }
-  { const pts = []; const eE = [-sLo, cLo, 0], eN = [-sLa * cLo, -sLa * sLo, cLa], eU = [cLa * cLo, cLa * sLo, sLa];
+  let placeMark = null;
+  function buildPlaceMarker() {
+    if (placeMark) { globeG.remove(placeMark); placeMark.children.forEach(c => c.geometry && c.geometry.dispose()); }
+    placeMark = new THREE.Group(); globeG.add(placeMark);
+    globeG.children.forEach(c => { if (c.userData && c.userData.city) c.visible = c.userData.city !== PLACE.name; });
+    const pts = []; const eE = [-sLo, cLo, 0], eN = [-sLa * cLo, -sLa * sLo, cLa], eU = [cLa * cLo, cLa * sLo, sLa];
     for (let az = 0; az <= 360; az += 3) { const a = az * D2R, el = 10 * D2R, u = [0, 1, 2].map(i => Math.cos(el) * Math.sin(a) * eE[i] + Math.cos(el) * Math.cos(a) * eN[i] + Math.sin(el) * eU[i]);
       const b = 2 * (OBS[0] * u[0] + OBS[1] * u[1] + OBS[2] * u[2]), c = OBS[0] ** 2 + OBS[1] ** 2 + OBS[2] ** 2 - (RE + 550) ** 2, rho = (-b + Math.sqrt(b * b - 4 * c)) / 2;
       const x = OBS[0] + rho * u[0], y = OBS[1] + rho * u[1], z = OBS[2] + rho * u[2]; pts.push(new THREE.Vector3(x / RE, z / RE, -y / RE)); }
-    globeG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0xffc66b, 0.55)));
-    globeG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([geoV(LAT, LON, 1), geoV(LAT, LON, 1 + 550 / RE)]), lineMat(0xffc66b, 0.5))); }
+    placeMark.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0xffc66b, 0.55)));
+    placeMark.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([geoV(LAT, LON, 1), geoV(LAT, LON, 1 + 550 / RE)]), lineMat(0xffc66b, 0.5)));
+    const pg = new THREE.BufferGeometry(), v = geoV(LAT, LON, 1.005);
+    pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([v.x, v.y, v.z]), 3)); pg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array([9]), 1)); pg.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array([1, 0.78, 0.42, 1]), 4));
+    const pm = ptMat(); pm.depthTest = true; placeMark.add(new THREE.Points(pg, pm));
+    const l = makeLabel(PLACE.name, { px: 48, h: 0.075, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.035)); l.position.y += 0.012; placeMark.add(l);
+  }
+  buildPlaceMarker();
   const shadow = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 5, 64, 1, true), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
   shadow.renderOrder = 2; globeG.add(shadow);
 
@@ -766,7 +796,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   }
 
   // ---------- camera ----------
-  const narv = geoV(LAT, LON, 1);
+  let narv = geoV(LAT, LON, 1);
   const cam = { dome: { th: 20 * D2R, pol: 60 * D2R, dist: 30 }, look: { az: 320 * D2R, pitch: 32 * D2R, fov: 95 }, globe: { th: Math.atan2(narv.x, narv.z), pol: Math.acos(narv.y) + 32 * D2R, dist: 3.4 } };
   function placeCamera() {
     const w = stage.clientWidth, h = stage.clientHeight, asp = w / Math.max(1, h); camera.aspect = asp;
@@ -843,8 +873,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   // ---------- predictions ----------
   let PASSES = [], nextDark = null;
   const sleep = () => new Promise(r => setTimeout(r, 0));
+  let predGen = 0;
   async function predictPasses() {
-    const t0 = Date.now(), STEP = 20000, NSx = Math.ceil(12 * 3600000 / STEP);
+    const gen = predGen, t0 = Date.now(), STEP = 20000, NSx = Math.ceil(12 * 3600000 / STEP);
     const g = [], sunE = [], sunEl = [];
     for (let k = 0; k <= NSx; k++) { const t = t0 + k * STEP, s = sunAt(t); g.push([s.c, s.s]); sunE.push(s.eci); sunEl.push(s.el); }
     nextDark = null; for (let k = 0; k <= NSx; k++) if (sunEl[k] < -6) { nextDark = t0 + k * STEP; break; }
@@ -863,9 +894,10 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         else if (cur) { out.push(cur); cur = null; }
       }
       if (cur) out.push(cur);
-      if (j % 12 === 11) await sleep();
+      if (j % 12 === 11) { await sleep(); if (gen !== predGen) return; }
     }
     out.sort((a, b) => a.tMax - b.tMax);
+    if (gen !== predGen) return;
     PASSES = out; renderPasses();
   }
   function renderPasses() {
@@ -886,7 +918,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     });
   }
   async function predictStations() {
-    const dl = $('stations'); dl.innerHTML = '';
+    const gen = predGen, dl = $('stations'); dl.innerHTML = '';
     const t0 = Date.now(), STEP = 30000, DAYS = 5, NSx = DAYS * 2880;
     for (const id of [25544, 48274]) {
       const j = OBJ.findIndex(o => o.id === id); const name = id === 25544 ? 'ISS' : 'Tiangong';
@@ -897,12 +929,12 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         const t = t0 + k * STEP, gm = O.gmst(t), st = stateAt(OBJ[j], t, Math.cos(gm), Math.sin(gm), null, false);
         if (st.el > maxAny) { maxAny = st.el; maxT = t; }
         if (!first && st.el >= 10) { const s = sunAt(t); if (s.el < -6 && O.litFraction(O.prop(OBJ[j].s, t).r, s.eci) >= 0.5) first = { t, el: st.el, az: st.az }; }
-        if (k - k0 > 600) { k0 = k; await sleep(); }
+        if (k - k0 > 600) { k0 = k; await sleep(); if (gen !== predGen) return; }
       }
       if (first) dd.textContent = 'Neste synlige passering ' + dateStr(first.t) + ' kl. ' + hm(first.t) + ', mot ' + dirName(first.az) + '.';
-      else if (maxAny < 0) dd.textContent = 'Kommer aldri over horisonten sett fra Narvik. Banen går ikke langt nok nord.';
-      else if (maxAny < 10) dd.textContent = 'Ingen synlige passeringer de neste ' + DAYS + ' dagene. Fra Narvik kommer den ikke høyere enn ' + num(maxAny) + '° over sørhorisonten, fordi banen ikke går langt nok nord.';
-      else dd.textContent = 'Ingen synlige passeringer de neste ' + DAYS + ' dagene. Når den går over Narvik, er det enten lyst eller den er i jordskyggen.';
+      else if (maxAny < 0) dd.textContent = 'Kommer aldri over horisonten sett fra ' + PLACE.name + '. Banen går ikke langt nok nord.';
+      else if (maxAny < 10) dd.textContent = 'Ingen synlige passeringer de neste ' + DAYS + ' dagene. Fra ' + PLACE.name + ' kommer den ikke høyere enn ' + num(maxAny) + '° over sørhorisonten, fordi banen ikke går langt nok nord.';
+      else dd.textContent = 'Ingen synlige passeringer de neste ' + DAYS + ' dagene. Når den går over ' + PLACE.name + ', er det enten lyst eller den er i jordskyggen.';
     }
   }
 
@@ -928,8 +960,8 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     const nb = OBJ.filter(o => o.kind !== 2).length, ns = OBJ.filter(o => o.kind === 2).length;
     add('Antall', nb + ' klare objekter og romstasjoner' + (ns ? ' · ' + ns.toLocaleString('nb-NO') + ' Starlink' : ''));
     if (starlinkState === 'ok') add('Utvalg', slInfo && slInfo.format === 'polar'
-      ? 'Starlink i baner med 70° og 97° helning, de som går høyt over Narvik. Starlink i 43° og 53° helning kommer aldri mer enn noen få grader over sørhorisonten herfra.'
-      : 'Starlink med mer enn 50° helning. De i 43° helning kommer aldri over horisonten i Narvik.');
+      ? 'Starlink i baner med 70° og 97° helning, de som går høyt over ' + PLACE.name + '. Starlink i 43° og 53° helning kommer aldri mer enn noen få grader over sørhorisonten herfra.'
+      : 'Starlink med mer enn 50° helning. De i 43° helning kommer aldri over horisonten i ' + PLACE.name + '.');
     else if (starlinkState === 'loading') add('Utvalg', 'Laster Starlink …');
     else if (starlinkState === 'old') add('Utvalg', 'Starlink-dataene er for gamle til å gi riktige posisjoner, så laget er slått av til neste oppdatering.');
     else add('Utvalg', 'Starlink-data er ikke tilgjengelig akkurat nå.');
@@ -986,10 +1018,10 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     return v(x0, y0) * (1 - fx) * (1 - fy) + v(x0 + 1, y0) * fx * (1 - fy) + v(x0, y0 + 1) * (1 - fx) * fy + v(x0 + 1, y0 + 1) * fx * fy;
   }
   function buildAurora() {
-    const g = AUR.grid; if (!g) return;
+    const g = AUR.grid; if (!g) return; AUR.pN = gridAt(LON, LAT);
     if (aurDome) { scene.remove(aurDome); aurDome.geometry.dispose(); }
     if (aurGlobe) { globeG.remove(aurGlobe); aurGlobe.geometry.dispose(); }
-    // dome: emission columns within sight of Narvik
+    // dome: emission columns within sight of the observer
     const P = [], C = [], A = []; let pSky = 0, skyAz = null;
     for (let lat = 52; lat <= 86; lat++) for (let lo = -45; lo <= 80; lo++) {
       const p = g[(((lo % 360) + 360) % 360) * 181 + lat + 90]; if (p < 3) continue;
@@ -1035,7 +1067,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   async function loadOvation() {
     try { const j = await getJSON(SWPC + 'json/ovation_aurora_latest.json', { cache: 'no-store' });
       const g = new Uint8Array(360 * 181); for (const c of j.coordinates) { const lo = ((c[0] % 360) + 360) % 360, y = c[1] + 90; if (y >= 0 && y <= 180) g[lo * 181 + y] = Math.min(255, Math.max(0, c[2])); }
-      AUR.grid = g; AUR.ovObs = Date.parse(j['Observation Time']); AUR.ovFc = Date.parse(j['Forecast Time']); AUR.pN = gridAt(LON, LAT); AUR.err.ov = null; buildAurora();
+      AUR.grid = g; AUR.ovObs = Date.parse(j['Observation Time']); AUR.ovFc = Date.parse(j['Forecast Time']); AUR.err.ov = null; buildAurora();
     } catch (e) { AUR.err.ov = e.message; }
     renderAurora();
   }
@@ -1056,7 +1088,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     renderAurora();
   }
   async function loadMet() {
-    try { const j = await getJSON('https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=68.44&lon=17.43');
+    try { const j = await getJSON('https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=' + LAT.toFixed(2) + '&lon=' + LON.toFixed(2));
       AUR.met = j.properties.timeseries.map(s => ({ t: Date.parse(s.time), c: s.data.instant.details.cloud_area_fraction })).filter(s => s.c != null); AUR.err.met = null;
     } catch (e) { AUR.err.met = e.message; }
     renderAurora();
@@ -1075,7 +1107,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
       const dir = AUR.skyDir != null ? dirName(AUR.skyDir) : null;
       const where = pSky > pN + 3 && dir ? ' Sterkest mot ' + dir + ', opp mot ' + Math.round(pSky) + ' % der.' : '';
       if (sun.el > -8) { verdict = 'For lyst'; cls = 'low'; text = 'Himmelen er for lys til nordlys nå.' + (nextDark ? ' Det blir mørkt rundt ' + hm(nextDark) + '.' : '') + ' Varselet nedenfor viser aktiviteten.'; }
-      else if (cl && cl.c >= 85) { verdict = 'Overskyet'; cls = 'cloud'; text = 'Det er ' + Math.round(cl.c) + ' % skydekke over Narvik, så nordlyset blir vanskelig å se selv om aktiviteten er ' + (score >= 12 ? 'god' : 'lav') + '.'; }
+      else if (cl && cl.c >= 85) { verdict = 'Overskyet'; cls = 'cloud'; text = 'Det er ' + Math.round(cl.c) + ' % skydekke over ' + PLACE.name + ', så nordlyset blir vanskelig å se selv om aktiviteten er ' + (score >= 12 ? 'god' : 'lav') + '.'; }
       else {
         if (score >= 30) { verdict = 'Gode sjanser'; cls = 'good'; } else if (score >= 12) { verdict = 'Mulig'; cls = 'mid'; } else if (score >= 5) { verdict = 'Svak sjanse'; cls = 'mid'; } else { verdict = 'Lite sannsynlig'; cls = 'low'; }
         text = (score >= 12 ? 'Gå ut og se, helst bort fra gatelys.' : score >= 5 ? 'Svakt nordlys kan vises lavt på himmelen, best sett fra et mørkt sted.' : 'Lite aktivitet nå.') + where + (cl && cl.c >= 50 ? ' Det er delvis skyet (' + Math.round(cl.c) + ' %).' : '');
@@ -1114,6 +1146,32 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     every(loadOvation, 10); every(loadKp, 3); every(loadKpForecast, 60); every(loadMet, 30); every(renderAurora, 1);
     document.addEventListener('visibilitychange', () => { if (!document.hidden && AUR.ovObs && Date.now() - AUR.ovObs > 15 * 60000) { loadOvation(); loadKp(); } });
   }
+
+  // ---------- place switch ----------
+  function applyPlaceText() {
+    document.querySelectorAll('.pname').forEach(e => { e.textContent = PLACE.name; });
+    $('pcoords').textContent = num(LAT, 2) + '° N ' + num(LON, 2) + '° Ø';
+    document.title = 'Satellittvakt ' + PLACE.name;
+    $('cv').setAttribute('aria-label', '3D-visning av satellitter over ' + PLACE.name);
+    document.querySelectorAll('.place button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === PLACE.key)));
+  }
+  function setPlace(key) {
+    if (!PLACES[key] || key === PLACE.key) return;
+    setObserver(key);
+    try { localStorage.setItem('sv-place', key); } catch (e) {}
+    try { history.replaceState(null, '', key === 'narvik' ? location.pathname + location.search : '#' + key); } catch (e) {}
+    narvikLbl.userData.text = PLACE.name; drawLabel(narvikLbl);
+    buildPlaceMarker(); narv = geoV(LAT, LON, 1);
+    cam.globe.th = Math.atan2(narv.x, narv.z); cam.globe.pol = Math.acos(narv.y) + 32 * D2R;
+    select(-1); force = true; lastScan = -1e15;
+    applyPlaceText(); paintRail(); renderDataInfo();
+    if (AUR.grid) buildAurora(); AUR.met = []; renderAurora(); loadMet();
+    predGen++; $('rows').innerHTML = '<div class="empty">Regner ut passeringer …</div>'; PASSES = [];
+    predictPasses().then(predictStations);
+  }
+  document.querySelectorAll('.place button').forEach(b => b.addEventListener('click', () => setPlace(b.dataset.place)));
+  window.addEventListener('hashchange', () => { const h = location.hash.replace('#', '').toLowerCase(); if (PLACES[h]) setPlace(h); });
+  applyPlaceText();
 
   // ---------- loop ----------
   function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); uPR.value = renderer.getPixelRatio(); placeCamera(); }

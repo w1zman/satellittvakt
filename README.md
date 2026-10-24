@@ -1,6 +1,6 @@
 # Satellittvakt Narvik
 
-Satellittene over Narvik i sanntid, i 3D: Starlink, rakettrinn og romstasjoner, med de neste klare passeringene.
+Satellittene over Narvik og Tromsø i sanntid, i 3D: Starlink, rakettrinn og romstasjoner, med de neste klare passeringene.
 
 Siden ligger på GitHub Pages. Banedataene hentes fra [CelesTrak](https://celestrak.org) to ganger i døgnet av jobben i `.github/workflows/oppdater-banedata.yml`, og siden regner ut posisjonene i nettleseren.
 
