@@ -616,12 +616,16 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 
   // globe
   const earthMat = new THREE.ShaderMaterial({
-    uniforms: { uSun: { value: new THREE.Vector3(1, 0, 0) } },
+    uniforms: { uSun: { value: new THREE.Vector3(1, 0, 0) }, uLand: { value: null }, uHasLand: { value: 0 } },
     vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vN = normal; vV = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: [
-      'varying vec3 vN; varying vec3 vV; uniform vec3 uSun;',
-      'void main(){ float d = dot(normalize(vN), uSun); float day = smoothstep(-0.12, 0.18, d);',
-      ' vec3 col = mix(vec3(0.02,0.032,0.06), vec3(0.11,0.19,0.33), day);',
+      'varying vec3 vN; varying vec3 vV; uniform vec3 uSun; uniform sampler2D uLand; uniform float uHasLand;',
+      'void main(){ vec3 n = normalize(vN); float d = dot(n, uSun); float day = smoothstep(-0.12, 0.18, d);',
+      ' vec2 uv = vec2(atan(-n.z, n.x) / 6.2831853 + 0.5, asin(clamp(n.y, -1.0, 1.0)) / 3.1415927 + 0.5);',
+      ' float land = uHasLand > 0.5 ? texture2D(uLand, uv).r : 0.0;',
+      ' vec3 ocean = mix(vec3(0.016,0.028,0.055), vec3(0.08,0.15,0.28), day);',
+      ' vec3 ground = mix(vec3(0.075,0.095,0.12), vec3(0.24,0.29,0.30), day);',
+      ' vec3 col = mix(ocean, ground, land);',
       ' col += vec3(0.30,0.14,0.08) * exp(-pow(d / 0.07, 2.0)) * 0.55;',
       ' float rim = pow(1.0 - abs(vV.z), 3.0); col += vec3(0.12,0.22,0.4) * rim * (0.25 + 0.75 * day);',
       ' gl_FragColor = vec4(col, 1.0); }'].join('\n')
@@ -637,11 +641,48 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   const CITIES = [['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
     ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['Nordpolen', 90, 0]];
   { const cp = new Float32Array(CITIES.length * 3), cs = new Float32Array(CITIES.length), cc = new Float32Array(CITIES.length * 4);
-    CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = c[3] ? 9 : 4.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
-      const l = makeLabel(c[0], { px: 48, h: c[3] ? 0.075 : 0.05, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
-      l.position.copy(geoV(c[1], c[2], 1.035)); l.position.y += 0.012; l.userData.city = c[0]; globeG.add(l); });
+    CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = 3.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
+      const l = makeLabel(c[0], { px: 48, h: 0.032, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
+      l.position.copy(geoV(c[1], c[2], 1.02)); l.position.y += 0.008; l.userData.city = c[0]; globeG.add(l); });
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(cp, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(cs, 1)); g.setAttribute('aCol', new THREE.BufferAttribute(cc, 4));
     const m = ptMat(); m.depthTest = true; globeG.add(new THREE.Points(g, m)); }
+  // world map: Natural Earth 1:50m via world-atlas, loaded the first time the globe is shown
+  let mapState = 'none';
+  async function loadWorld() {
+    if (mapState !== 'none') return; mapState = 'loading';
+    try {
+      const r = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json'); if (!r.ok) throw new Error('HTTP ' + r.status);
+      const topo = await r.json(), [sx, sy] = topo.transform.scale, [tx, ty] = topo.transform.translate;
+      const arcs = topo.arcs.map(a => { let x = 0, y = 0; return a.map(p => { x += p[0]; y += p[1]; return [x * sx + tx, y * sy + ty]; }); });
+      const ring = ids => { const pts = []; ids.forEach(i => { const a = i < 0 ? arcs[~i].slice().reverse() : arcs[i]; a.forEach((p, k) => { if (k || !pts.length) pts.push(p); }); }); return pts; };
+      const polys = g => g.type === 'Polygon' ? [g.arcs] : g.type === 'MultiPolygon' ? g.arcs : [];
+      // land mask texture (equirectangular)
+      const W = 4096, H = 2048, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d');
+      cx.fillStyle = '#000'; cx.fillRect(0, 0, W, H); cx.fillStyle = '#fff';
+      const land = topo.objects.land.type === 'GeometryCollection' ? topo.objects.land.geometries : [topo.objects.land];
+      land.forEach(g => polys(g).forEach(poly => {
+        for (const off of [-W, 0, W]) {
+          cx.beginPath();
+          poly.forEach(ids => { let prev = null, shift = 0; ring(ids).forEach(([lo, la], k) => {
+            if (prev !== null) { if (lo - prev > 180) shift -= 360; else if (prev - lo > 180) shift += 360; } prev = lo;
+            const x = (lo + shift + 180) / 360 * W + off, y = (90 - la) / 180 * H; k ? cx.lineTo(x, y) : cx.moveTo(x, y); }); cx.closePath(); });
+          cx.fill('evenodd');
+        }
+      }));
+      const tex = new THREE.CanvasTexture(cv); tex.wrapS = THREE.RepeatWrapping; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+      earthMat.uniforms.uLand.value = tex; earthMat.uniforms.uHasLand.value = 1;
+      // outlines: arcs used by one country = coastline, by two = border
+      const use = new Uint8Array(arcs.length);
+      topo.objects.countries.geometries.forEach(g => polys(g).forEach(poly => poly.forEach(ids => ids.forEach(i => { use[i < 0 ? ~i : i]++; }))));
+      const coast = [], border = [];
+      arcs.forEach((a, i) => { const out = use[i] >= 2 ? border : coast; for (let k = 1; k < a.length; k++) {
+        if (Math.abs(a[k][0] - a[k - 1][0]) > 180) continue;
+        const p = geoV(a[k - 1][1], a[k - 1][0], 1.0015), q = geoV(a[k][1], a[k][0], 1.0015); out.push(p.x, p.y, p.z, q.x, q.y, q.z); } });
+      const seg = (arr, color, op) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(arr), 3)); const l = new THREE.LineSegments(g, lineMat(color, op)); l.material.depthWrite = false; return l; };
+      globeG.add(seg(coast, 0xb9c8dd, 0.55), seg(border, 0x8d9cb5, 0.22));
+      mapState = 'ok';
+    } catch (e) { mapState = 'none'; }
+  }
   let placeMark = null;
   function buildPlaceMarker() {
     if (placeMark) { globeG.remove(placeMark); placeMark.children.forEach(c => c.geometry && c.geometry.dispose()); }
@@ -654,9 +695,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     placeMark.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0xffc66b, 0.55)));
     placeMark.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([geoV(LAT, LON, 1), geoV(LAT, LON, 1 + 550 / RE)]), lineMat(0xffc66b, 0.5)));
     const pg = new THREE.BufferGeometry(), v = geoV(LAT, LON, 1.005);
-    pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([v.x, v.y, v.z]), 3)); pg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array([9]), 1)); pg.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array([1, 0.78, 0.42, 1]), 4));
+    pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([v.x, v.y, v.z]), 3)); pg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array([7]), 1)); pg.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array([1, 0.78, 0.42, 1]), 4));
     const pm = ptMat(); pm.depthTest = true; placeMark.add(new THREE.Points(pg, pm));
-    const l = makeLabel(PLACE.name, { px: 48, h: 0.075, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.035)); l.position.y += 0.012; placeMark.add(l);
+    const l = makeLabel(PLACE.name, { px: 48, h: 0.045, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.022)); l.position.y += 0.01; placeMark.add(l);
   }
   buildPlaceMarker();
   const shadow = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 5, 64, 1, true), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
@@ -977,6 +1018,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   // ---------- controls ----------
   const modeBtns = { dome: $('m-dome'), look: $('m-look'), globe: $('m-globe') };
   function setMode(m) {
+    if (m === 'globe') loadWorld();
     mode = m; Object.entries(modeBtns).forEach(([k, b]) => b.setAttribute('aria-pressed', String(k === m)));
     domeG.visible = m !== 'globe'; starG.visible = m !== 'globe'; globeG.visible = m === 'globe';
     domeMat.uniforms.uOpacity.value = m === 'look' ? 1.0 : 0.55; domeMat.side = m === 'look' ? THREE.BackSide : THREE.DoubleSide;
