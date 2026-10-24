@@ -1049,7 +1049,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   const AUR_FS = 'varying vec4 vCol; uniform float uFade; void main(){ vec2 p = gl_PointCoord - 0.5; float d = dot(p, p); float a = exp(-d * 14.0) * vCol.a * uFade; if (a < 0.003) discard; gl_FragColor = vec4(vCol.rgb * a, a); }';
   const aurDomeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400), vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
   const aurGlobeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400), vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-  aurGlobeMat.uniforms.uMax.value = 18;
+  aurGlobeMat.uniforms.uMax.value = 40;
   let aurDome = null, aurGlobe = null;
   const HEIGHTS = [100, 118, 140, 168, 205, 250], HF = [0.5, 0.62, 0.55, 0.36, 0.2, 0.11];
   const HCOL = [[0.30, 1.0, 0.58], [0.32, 1.0, 0.6], [0.36, 0.98, 0.62], [0.45, 0.9, 0.62], [0.95, 0.38, 0.55], [1.0, 0.3, 0.5]];
@@ -1084,9 +1084,10 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     // globe: the whole oval, both hemispheres, at 110 km
     const P2 = [], C2 = [], A2 = [];
     for (let lo = 0; lo < 360; lo++) for (let y = 0; y <= 180; y++) {
-      const p = g[lo * 181 + y], lat = y - 90; if (p < 4 || Math.abs(lat) < 35) continue;
-      const v = geoV(lat, lo, 1 + 110 / RE); P2.push(v.x, v.y, v.z);
-      const a = Math.min(1, p / 45) * 0.55; C2.push(0.32, 1.0, 0.6, a); A2.push(0.03);
+      const p = g[lo * 181 + y], lat = y - 90; if (p < 3 || Math.abs(lat) < 35) continue;
+      const v = geoV(lat, lo, 1 + 110 / RE), a = Math.min(1, p / 22);
+      P2.push(v.x, v.y, v.z); C2.push(0.36, 1.0, 0.62, 0.95 * a); A2.push(0.034);
+      const w = geoV(lat, lo, 1 + 180 / RE); P2.push(w.x, w.y, w.z); C2.push(0.45, 1.0, 0.7, 0.35 * a); A2.push(0.075);
     }
     geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P2), 3)); geo.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array(C2), 4)); geo.setAttribute('aAng', new THREE.BufferAttribute(new Float32Array(A2), 1));
