@@ -1,0 +1,49 @@
+name: Oppdater banedata
+
+# Henter ferske banedata fra CelesTrak to ganger i døgnet og lagrer dem i repoet.
+# GitHub Pages publiserer siden på nytt automatisk etter hver lagring.
+on:
+  schedule:
+    - cron: "17 3,14 * * *"   # 05:17 og 16:17 norsk sommertid (04:17 og 15:17 vintertid)
+  workflow_dispatch:           # gjør det mulig å kjøre den for hånd fra Actions-fanen
+
+permissions:
+  contents: write
+
+concurrency:
+  group: oppdater-banedata
+  cancel-in-progress: false
+
+jobs:
+  oppdater:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Last ned fra CelesTrak
+        run: |
+          mkdir -p nedlasting
+          UA="Satellittvakt-Narvik (GitHub Actions)"
+          curl -sfL --max-time 120 -A "$UA" -o nedlasting/visual.csv "https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=csv" || echo "Klare objekter kunne ikke lastes ned"
+          curl -sfL --max-time 180 -A "$UA" -o nedlasting/starlink.csv "https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=csv" || echo "Starlink kunne ikke lastes ned"
+
+      - name: Bygg datafilene
+        run: node tools/assemble.js . curl nedlasting
+
+      - name: Lagre endringene
+        run: |
+          rm -rf nedlasting
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add visual.csv starlink-polar.txt meta.json
+          if git diff --cached --quiet; then
+            echo "Ingen endringer"
+          else
+            git commit -m "Oppdater banedata $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi
