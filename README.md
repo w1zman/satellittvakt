@@ -7,3 +7,6 @@ Siden ligger på GitHub Pages. Banedataene hentes fra [CelesTrak](https://celest
 - `index.html` – selve siden
 - `visual.csv`, `starlink-polar.txt`, `meta.json` – banedata (oppdateres automatisk)
 - `tools/` – skriptene som bygger datafilene
+
+## Endre siden
+Kildekoden ligger i `src/` (`template.html`, `app.js`, `orb.js`). Etter endringer: `python3 src/build.py` lager `index.html` på nytt.

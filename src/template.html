@@ -1,0 +1,261 @@
+<title>Satellittvakt Narvik</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Sanntidskart over satellittene som passerer himmelen over Narvik akkurat nå.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: polar-night instrument. Live sky first, time controls under it, upcoming passes + station status + data age beside (desktop) or below (phone). Single dark theme by design. */
+:root {
+  color-scheme: dark;
+  --ink: #060a13;        /* night sky */
+  --panel: #0c1322;      /* raised surfaces */
+  --line: #1d2940;       /* hairlines */
+  --frost: #e4ecf7;      /* primary text */
+  --mist: #8d9cb5;       /* secondary text */
+  --sun: #ffc66b;        /* sunlit bright objects (accent) */
+  --ice: #9fd6ff;        /* Starlink */
+  --station: #ff8f6b;    /* ISS / Tiangong */
+  --shade: #55627c;      /* in Earth's shadow */
+  --live: #7be3a8;       /* live status */
+  --warn: #ffb35c;       /* stale data */
+  --aurora: #6dfbb0;     /* northern lights */
+  --rail: var(--line);   /* timeline rail, set by script */
+  --f-display: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+html, body { background: var(--ink); color: var(--frost); }
+body {
+  font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 4px; }
+.eyebrow { font-family: var(--f-data); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--mist); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(38px, 7vw, 64px); line-height: .95; letter-spacing: .01em; margin: 2px 0 6px; text-wrap: balance; text-transform: uppercase; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+h1 em { font-style: normal; color: var(--sun); }
+.livepill { font-family: var(--f-data); font-size: 12px; font-weight: 500; letter-spacing: .1em; padding: 4px 10px 4px 9px; border-radius: 999px; border: 1px solid var(--live); color: var(--live); display: inline-flex; align-items: center; gap: 7px; text-transform: uppercase; }
+.livepill i { width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: pulse 2s ease-in-out infinite; }
+.livepill.off { border-color: var(--mist); color: var(--mist); }
+.livepill.off i { background: var(--mist); animation: none; }
+@keyframes pulse { 50% { opacity: .25; } }
+.lede { color: var(--mist); max-width: 62ch; margin: 0; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 22px; align-items: start; }
+@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.stagecol { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.stage { position: relative; width: 100%; height: min(74vh, 720px); min-height: 360px; border-radius: 14px; overflow: hidden; background: #03060c; border: 1px solid var(--line); }
+@media (max-width: 920px) { .stage { height: auto; aspect-ratio: 1 / 1.08; max-height: 76vh; max-width: 100%; } }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.stage canvas:active { cursor: grabbing; }
+.modes { position: absolute; top: 10px; left: 10px; display: flex; gap: 2px; padding: 3px; background: rgba(6,10,19,.72); border: 1px solid var(--line); border-radius: 999px; backdrop-filter: blur(6px); }
+.modes button { font: 500 12.5px var(--f-body); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+.modes button[aria-pressed="true"] { background: var(--frost); color: var(--ink); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+.readout { position: absolute; top: 10px; right: 10px; text-align: right; pointer-events: none; display: flex; flex-direction: column; gap: 2px; }
+.clock { font-family: var(--f-display); font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.readout .sub { font-family: var(--f-data); font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; }
+.readout .now { font-family: var(--f-data); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.now .s { color: var(--ice); } .now .b { color: var(--sun); } .now .a { color: var(--aurora); }
+@media (max-width: 520px) { .clock { font-size: 30px; } .modes button { padding: 6px 9px; font-size: 12px; } }
+.tag { position: absolute; left: 0; top: 0; pointer-events: none; background: rgba(6,10,19,.88); border: 1px solid var(--line); border-left: 2px solid var(--sun); border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.35; max-width: 230px; }
+.tag b { font-weight: 600; display: block; }
+.tag span { font-family: var(--f-data); font-size: 11px; color: var(--mist); }
+.banner { position: absolute; left: 10px; right: 10px; bottom: 10px; font-size: 12px; color: var(--frost); pointer-events: none; display: flex; justify-content: flex-start; }
+.banner span { background: rgba(6,10,19,.72); padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); max-width: 100%; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mist); font-size: 14px; text-align: center; padding: 20px; }
+
+.timeline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.ctl { font: 600 13px var(--f-body); color: var(--ink); background: var(--live); border: 0; border-radius: 999px; height: 36px; padding: 0 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.ctl i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.ctl[aria-pressed="false"] { background: transparent; color: var(--live); box-shadow: inset 0 0 0 1px var(--live); }
+.track { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.scale { position: relative; height: 14px; font-family: var(--f-data); font-size: 10.5px; color: var(--mist); font-variant-numeric: tabular-nums; }
+.scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.scale span:first-child { transform: none; }
+.scale span:last-child { transform: translateX(-100%); }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; margin: 0; }
+input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--rail); }
+input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--rail); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--frost); margin-top: -6px; border: 3px solid var(--ink); box-shadow: 0 0 0 1px var(--frost); }
+input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--frost); border: 3px solid var(--ink); }
+.speeds { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+.speeds button { font: 500 12px var(--f-data); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 5px 9px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.speeds button[aria-pressed="true"] { background: var(--line); color: var(--frost); }
+.layers { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; font: 500 12.5px var(--f-body); color: var(--frost); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 9px; cursor: pointer; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.chip[aria-pressed="false"] { color: var(--mist); background: transparent; }
+.chip[aria-pressed="false"] i { opacity: .3; }
+.chip small { font-family: var(--f-data); color: var(--mist); font-size: 11px; }
+.chip:disabled { cursor: default; opacity: .6; }
+
+aside { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-height: 1; margin: 0; text-transform: uppercase; letter-spacing: .02em; text-wrap: balance; }
+.card p { margin: 0; }
+.card p.m { color: var(--mist); font-size: 13.5px; }
+.list { display: flex; flex-direction: column; }
+.listhead, .row { display: grid; grid-template-columns: 58px minmax(0, 1fr) 40px 44px; gap: 8px; }
+.listhead { font-family: var(--f-data); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--mist); padding: 0 6px 6px; border-bottom: 1px solid var(--line); }
+.row { align-items: center; text-align: left; width: 100%; background: transparent; color: var(--frost); border: 0; border-bottom: 1px solid var(--line); padding: 8px 6px; cursor: pointer; font: inherit; }
+.row:hover { background: rgba(255,198,107,.06); }
+.row[aria-pressed="true"] { background: rgba(255,198,107,.12); }
+.row .t { font-family: var(--f-data); font-size: 13px; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; line-height: 1.2; }
+.row .t small { font-size: 10.5px; color: var(--mist); }
+.row .t small.on { color: var(--live); }
+.row .n { min-width: 0; display: flex; flex-direction: column; }
+.row .n b { font-weight: 600; font-size: 13.5px; overflow-wrap: anywhere; }
+.row .n span { font-size: 11.5px; color: var(--mist); }
+.row .e { font-family: var(--f-data); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
+.row .e.hi { color: var(--sun); }
+.row .d { font-family: var(--f-data); font-size: 11.5px; color: var(--mist); text-align: right; }
+.row.st .n b { color: var(--station); }
+.scroller { max-height: 520px; overflow-y: auto; }
+@media (max-width: 920px) { .scroller { max-height: none; } }
+.empty { color: var(--mist); font-size: 13.5px; padding: 12px 6px; }
+.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; font-size: 13.5px; margin: 0; }
+.kv dt { font-family: var(--f-data); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mist); padding-top: 2px; }
+.kv dd { margin: 0; }
+.pill { display: inline-block; font-family: var(--f-data); font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; margin-left: 6px; vertical-align: 1px; }
+.pill.ok { color: var(--live); } .pill.mid { color: var(--sun); } .pill.old { color: var(--warn); }
+.method { font-size: 12.5px; color: var(--mist); max-width: 80ch; margin: 0; }
+.method a { color: var(--frost); }
+
+/* northern lights card */
+.aur { border-color: color-mix(in srgb, var(--aurora) 35%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--aurora) 7%, var(--panel)), var(--panel) 55%); }
+.aurhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.verdict { font-family: var(--f-data); font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.verdict.good { color: var(--aurora); background: color-mix(in srgb, var(--aurora) 14%, transparent); }
+.verdict.mid { color: var(--sun); } .verdict.low, .verdict.wait { color: var(--mist); } .verdict.cloud { color: var(--ice); }
+.astats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.astats .stat { border-top: 1px solid var(--line); padding-top: 6px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.astats .stat b { font-family: var(--f-display); font-weight: 800; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.astats .stat span { font-size: 11.5px; color: var(--mist); line-height: 1.3; }
+#a-prob { color: var(--aurora); }
+.kp-act { color: var(--aurora); } .kp-storm { color: var(--sun); }
+#a-wind b { font-family: var(--f-data); font-weight: 500; font-variant-numeric: tabular-nums; }
+#a-wind b.good { color: var(--aurora); } #a-wind b.mid { color: var(--sun); }
+.mini { display: flex; flex-direction: column; gap: 6px; }
+.mini h3 { margin: 0; font-family: var(--f-data); font-size: 10.5px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--mist); }
+.bars { display: flex; align-items: flex-end; gap: 4px; height: 74px; }
+.kb, .cb { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; position: relative; }
+.kb i, .cb i { display: block; width: 100%; border-radius: 3px 3px 1px 1px; background: var(--line); }
+.kb b { position: absolute; font-family: var(--f-data); font-size: 10.5px; font-weight: 500; color: var(--frost); bottom: 18px; }
+.kb span, .cb span { font-family: var(--f-data); font-size: 10px; color: var(--mist); height: 13px; line-height: 13px; font-variant-numeric: tabular-nums; }
+.kb.act i { background: color-mix(in srgb, var(--aurora) 70%, var(--line)); } .kb.storm i { background: var(--sun); }
+.kb.calm i { background: color-mix(in srgb, var(--mist) 45%, var(--line)); }
+.kb.cur { outline: 1px solid color-mix(in srgb, var(--frost) 40%, transparent); outline-offset: 2px; border-radius: 4px; }
+.cb i { background: color-mix(in srgb, var(--ice) 45%, var(--line)); }
+.bars .m { align-self: center; }
+.src { font-size: 11.5px; color: var(--mist); margin: 0; }
+.src a { color: var(--frost); }
+
+.toprow { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.place { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+.place button { font: 600 13px var(--f-body); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.place button[aria-pressed="true"] { background: var(--sun); color: var(--ink); }
+.place button:hover:not([aria-pressed="true"]) { color: var(--frost); }
+@media (prefers-reduced-motion: reduce) { .livepill i { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="toprow">
+      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68,44° N 17,43° Ø</span> · himmelen i sanntid</div>
+      <div class="place" role="group" aria-label="Velg sted">
+        <button type="button" data-place="narvik" aria-pressed="true">Narvik</button>
+        <button type="button" data-place="tromso" aria-pressed="false">Tromsø</button>
+      </div>
+    </div>
+    <h1><span>Satellitter over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt">Live</span></span></h1>
+    <p class="lede">Lyspunktene er satellitter og rakettrinn som står i sollys over byen akkurat nå, og det grønne skjæret er nordlysvarselet fra NOAA. Dra for å snu bildet, klyp eller rull for å zoome, og trykk på et lyspunkt eller en rad i lista.</p>
+  </header>
+
+  <div class="main">
+    <section class="stagecol" aria-label="3D-visning">
+      <div class="stage" id="stage">
+        <canvas id="cv" aria-label="3D-visning av satellitter"></canvas>
+        <div class="loading" id="loading">Henter banedata …</div>
+        <div class="modes" role="group" aria-label="Visning">
+          <button type="button" id="m-dome" aria-pressed="true">Himmelen</button>
+          <button type="button" id="m-look" aria-pressed="false">Se opp</button>
+          <button type="button" id="m-globe" aria-pressed="false">Jorda</button>
+        </div>
+        <div class="readout">
+          <div class="clock" id="clock">--:--:--</div>
+          <div class="sub" id="dateline"></div>
+          <div class="sub" id="sunline"></div>
+          <div class="now" id="nowline"></div>
+        </div>
+        <div class="tag" id="tag" hidden></div>
+        <div class="banner" id="banner" hidden><span id="bannertxt"></span></div>
+      </div>
+
+      <div class="timeline">
+        <button type="button" class="ctl" id="live" aria-pressed="true"><i></i>Live</button>
+        <div class="track">
+          <input type="range" id="time" min="-60" max="720" step="1" value="0" aria-label="Tid fra nå i minutter">
+          <div class="scale" id="scale"><span style="left:0%">−1 t</span><span id="sc0">Nå</span><span id="sc3">+3 t</span><span id="sc6">+6 t</span><span id="sc9">+9 t</span><span style="left:100%">+12 t</span></div>
+        </div>
+        <div class="speeds" role="group" aria-label="Fart">
+          <button type="button" data-s="1" aria-pressed="true">1×</button>
+          <button type="button" data-s="60" aria-pressed="false">60×</button>
+          <button type="button" data-s="600" aria-pressed="false">600×</button>
+        </div>
+      </div>
+
+      <div class="layers" role="group" aria-label="Lag">
+        <button type="button" class="chip" id="l-station" aria-pressed="true"><i style="background:var(--station)"></i>Romstasjoner <small id="c-station">–</small></button>
+        <button type="button" class="chip" id="l-bright" aria-pressed="true"><i style="background:var(--sun)"></i>Klare objekter <small id="c-bright">–</small></button>
+        <button type="button" class="chip" id="l-starlink" aria-pressed="true"><i style="background:var(--ice)"></i>Starlink <small id="c-starlink">–</small></button>
+        <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i>Nordlys <small id="c-aurora">–</small></button>
+        <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i>Vis de i jordskyggen</button>
+      </div>
+      <p class="method">Posisjonene regnes ut i nettleseren fra banedata fra <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a>, med en forenklet SGP4-modell. Med ferske data stemmer de innenfor omtrent én grad på himmelen; nøyaktigheten synker jo eldre dataene blir. Et objekt regnes som synlig når det står i sollys, minst 10° over horisonten, og sola er mer enn 6° under horisonten i Narvik. «Klare objekter» er CelesTrak sin liste over de rundt 150 klareste satellittene og rakettrinnene. Starlink-laget viser satellittene i de banene som går høyt over Narvik. Banedataene fornyes én gang i døgnet, og boksen «Banedata» viser når de sist ble hentet. Nordlyset i 3D er NOAAs OVATION-varsel for de neste 30–60 minuttene, tegnet i 100–250 km høyde, og vises bare når tidslinjen står nær nå. Stjernene er tatt med for orientering.</p>
+    </section>
+
+    <aside>
+      <section class="card aur" aria-live="polite">
+        <div class="aurhead"><h2>Nordlys nå</h2><span class="verdict wait" id="a-verdict">Henter …</span></div>
+        <p id="a-summary">Henter data fra NOAA og Meteorologisk institutt …</p>
+        <div class="astats">
+          <div class="stat"><b id="a-prob">–</b><span>sannsynlighet over <span class="pname">Narvik</span></span></div>
+          <div class="stat"><b id="a-kp">–</b><span>Kp-indeks nå</span></div>
+          <div class="stat"><b id="a-cloud">–</b><span>skydekke i <span class="pname">Narvik</span></span></div>
+        </div>
+        <dl class="kv" id="a-wind"></dl>
+        <div class="mini"><h3>Kp-varsel, neste 24 timer</h3><div class="bars" id="a-kpfc"></div></div>
+        <div class="mini"><h3>Skydekke, neste 12 timer</h3><div class="bars" id="a-clouds"></div></div>
+        <p class="src"><span id="a-updated"></span> Kilder: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION-varsel, Kp, solvind) og <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (skydekke, CC BY 4.0). Oppdateres hvert par minutter.</p>
+      </section>
+      <section class="card">
+        <h2>Neste klare passeringer</h2>
+        <p class="m">De neste 12 timene, når himmelen er mørk nok. Tidspunkt for høyeste punkt, maks høyde og retning. Trykk for å spole dit.</p>
+        <div class="list">
+          <div class="listhead"><span>Tid</span><span>Objekt</span><span style="text-align:right">Maks</span><span style="text-align:right">Retn.</span></div>
+          <div class="scroller" id="rows"><div class="empty">Regner ut passeringer …</div></div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Romstasjonene</h2>
+        <dl class="kv" id="stations"><dt>ISS</dt><dd>Regner …</dd><dt>Tiangong</dt><dd>Regner …</dd></dl>
+      </section>
+      <section class="card">
+        <h2>Banedata</h2>
+        <dl class="kv" id="datainfo"><dt>Hentet</dt><dd>–</dd></dl>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*ORBJS*/
+</script>
+<script>
+/*APPJS*/
+</script>
