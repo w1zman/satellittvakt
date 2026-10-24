@@ -1,6 +1,6 @@
-<title>Satellittvakt Narvik</title>
+<title>Satellite Watch Narvik</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Sanntidskart over satellittene som passerer himmelen over Narvik akkurat nå.">
+<meta name="description" content="Live map of the satellites crossing the sky over Narvik right now.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -165,25 +165,25 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 <div class="wrap">
   <header>
     <div class="toprow">
-      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68,44° N 17,43° Ø</span> · himmelen i sanntid</div>
-      <div class="place" role="group" aria-label="Velg sted">
+      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68.44° N 17.43° E</span> · the sky in real time</div>
+      <div class="place" role="group" aria-label="Choose place">
         <button type="button" data-place="narvik" aria-pressed="true">Narvik</button>
         <button type="button" data-place="tromso" aria-pressed="false">Tromsø</button>
       </div>
     </div>
-    <h1><span>Satellitter over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt">Live</span></span></h1>
-    <p class="lede">Lyspunktene er satellitter og rakettrinn som står i sollys over byen akkurat nå, og det grønne skjæret er nordlysvarselet fra NOAA. Dra for å snu bildet, klyp eller rull for å zoome, og trykk på et lyspunkt eller en rad i lista.</p>
+    <h1><span>Satellites over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt">Live</span></span></h1>
+    <p class="lede">The dots of light are satellites and rocket bodies in sunlight over the town right now, and the green glow is the NOAA northern lights forecast. Drag to turn the view, pinch or scroll to zoom, and tap a dot or a row in the list.</p>
   </header>
 
   <div class="main">
-    <section class="stagecol" aria-label="3D-visning">
+    <section class="stagecol" aria-label="3D view">
       <div class="stage" id="stage">
-        <canvas id="cv" aria-label="3D-visning av satellitter"></canvas>
-        <div class="loading" id="loading">Henter banedata …</div>
-        <div class="modes" role="group" aria-label="Visning">
-          <button type="button" id="m-dome" aria-pressed="true">Himmelen</button>
-          <button type="button" id="m-look" aria-pressed="false">Se opp</button>
-          <button type="button" id="m-globe" aria-pressed="false">Jorda</button>
+        <canvas id="cv" aria-label="3D view of satellites"></canvas>
+        <div class="loading" id="loading">Loading orbit data …</div>
+        <div class="modes" role="group" aria-label="View">
+          <button type="button" id="m-dome" aria-pressed="true">Sky</button>
+          <button type="button" id="m-look" aria-pressed="false">Look up</button>
+          <button type="button" id="m-globe" aria-pressed="false">Earth</button>
         </div>
         <div class="readout">
           <div class="clock" id="clock">--:--:--</div>
@@ -198,55 +198,55 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
       <div class="timeline">
         <button type="button" class="ctl" id="live" aria-pressed="true"><i></i>Live</button>
         <div class="track">
-          <input type="range" id="time" min="-60" max="720" step="1" value="0" aria-label="Tid fra nå i minutter">
-          <div class="scale" id="scale"><span style="left:0%">−1 t</span><span id="sc0">Nå</span><span id="sc3">+3 t</span><span id="sc6">+6 t</span><span id="sc9">+9 t</span><span style="left:100%">+12 t</span></div>
+          <input type="range" id="time" min="-60" max="720" step="1" value="0" aria-label="Time from now in minutes">
+          <div class="scale" id="scale"><span style="left:0%">−1 h</span><span id="sc0">Now</span><span id="sc3">+3 h</span><span id="sc6">+6 h</span><span id="sc9">+9 h</span><span style="left:100%">+12 h</span></div>
         </div>
-        <div class="speeds" role="group" aria-label="Fart">
+        <div class="speeds" role="group" aria-label="Speed">
           <button type="button" data-s="1" aria-pressed="true">1×</button>
           <button type="button" data-s="60" aria-pressed="false">60×</button>
           <button type="button" data-s="600" aria-pressed="false">600×</button>
         </div>
       </div>
 
-      <div class="layers" role="group" aria-label="Lag">
-        <button type="button" class="chip" id="l-station" aria-pressed="true"><i style="background:var(--station)"></i>Romstasjoner <small id="c-station">–</small></button>
-        <button type="button" class="chip" id="l-bright" aria-pressed="true"><i style="background:var(--sun)"></i>Klare objekter <small id="c-bright">–</small></button>
+      <div class="layers" role="group" aria-label="Layers">
+        <button type="button" class="chip" id="l-station" aria-pressed="true"><i style="background:var(--station)"></i>Space stations <small id="c-station">–</small></button>
+        <button type="button" class="chip" id="l-bright" aria-pressed="true"><i style="background:var(--sun)"></i>Bright objects <small id="c-bright">–</small></button>
         <button type="button" class="chip" id="l-starlink" aria-pressed="true"><i style="background:var(--ice)"></i>Starlink <small id="c-starlink">–</small></button>
-        <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i>Nordlys <small id="c-aurora">–</small></button>
-        <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i>Vis de i jordskyggen</button>
+        <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i>Northern lights <small id="c-aurora">–</small></button>
+        <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i>Show those in Earth's shadow</button>
       </div>
-      <p class="method">Posisjonene regnes ut i nettleseren fra banedata fra <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a>, med en forenklet SGP4-modell. Med ferske data stemmer de innenfor omtrent én grad på himmelen; nøyaktigheten synker jo eldre dataene blir. Et objekt regnes som synlig når det står i sollys, minst 10° over horisonten, og sola er mer enn 6° under horisonten i Narvik. «Klare objekter» er CelesTrak sin liste over de rundt 150 klareste satellittene og rakettrinnene. Starlink-laget viser satellittene i de banene som går høyt over Narvik. Banedataene fornyes én gang i døgnet, og boksen «Banedata» viser når de sist ble hentet. Nordlyset i 3D er NOAAs OVATION-varsel for de neste 30–60 minuttene, tegnet i 100–250 km høyde, og vises bare når tidslinjen står nær nå. Stjernene er tatt med for orientering.</p>
+      <p class="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon in Narvik. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over Narvik. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The stars are included for orientation.</p>
     </section>
 
     <aside>
       <section class="card aur" aria-live="polite">
-        <div class="aurhead"><h2>Nordlys nå</h2><span class="verdict wait" id="a-verdict">Henter …</span></div>
-        <p id="a-summary">Henter data fra NOAA og Meteorologisk institutt …</p>
+        <div class="aurhead"><h2>Northern lights now</h2><span class="verdict wait" id="a-verdict">Loading …</span></div>
+        <p id="a-summary">Loading data from NOAA and the Norwegian Meteorological Institute …</p>
         <div class="astats">
-          <div class="stat"><b id="a-prob">–</b><span>sannsynlighet over <span class="pname">Narvik</span></span></div>
-          <div class="stat"><b id="a-kp">–</b><span>Kp-indeks nå</span></div>
-          <div class="stat"><b id="a-cloud">–</b><span>skydekke i <span class="pname">Narvik</span></span></div>
+          <div class="stat"><b id="a-prob">–</b><span>probability over <span class="pname">Narvik</span></span></div>
+          <div class="stat"><b id="a-kp">–</b><span>Kp index now</span></div>
+          <div class="stat"><b id="a-cloud">–</b><span>cloud cover in <span class="pname">Narvik</span></span></div>
         </div>
         <dl class="kv" id="a-wind"></dl>
-        <div class="mini"><h3>Kp-varsel, neste 24 timer</h3><div class="bars" id="a-kpfc"></div></div>
-        <div class="mini"><h3>Skydekke, neste 12 timer</h3><div class="bars" id="a-clouds"></div></div>
-        <p class="src"><span id="a-updated"></span> Kilder: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION-varsel, Kp, solvind) og <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (skydekke, CC BY 4.0). Oppdateres hvert par minutter.</p>
+        <div class="mini"><h3>Kp forecast, next 24 hours</h3><div class="bars" id="a-kpfc"></div></div>
+        <div class="mini"><h3>Cloud cover, next 12 hours</h3><div class="bars" id="a-clouds"></div></div>
+        <p class="src"><span id="a-updated"></span> Sources: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION forecast, Kp, solar wind) and <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (cloud cover, CC BY 4.0). Updated every few minutes.</p>
       </section>
       <section class="card">
-        <h2>Neste klare passeringer</h2>
-        <p class="m">De neste 12 timene, når himmelen er mørk nok. Tidspunkt for høyeste punkt, maks høyde og retning. Trykk for å spole dit.</p>
+        <h2>Next bright passes</h2>
+        <p class="m">The next 12 hours, when the sky is dark enough. Time of highest point, max altitude and direction. Tap to jump there.</p>
         <div class="list">
-          <div class="listhead"><span>Tid</span><span>Objekt</span><span style="text-align:right">Maks</span><span style="text-align:right">Retn.</span></div>
-          <div class="scroller" id="rows"><div class="empty">Regner ut passeringer …</div></div>
+          <div class="listhead"><span>Time</span><span>Object</span><span style="text-align:right">Max</span><span style="text-align:right">Dir.</span></div>
+          <div class="scroller" id="rows"><div class="empty">Calculating passes …</div></div>
         </div>
       </section>
       <section class="card">
-        <h2>Romstasjonene</h2>
-        <dl class="kv" id="stations"><dt>ISS</dt><dd>Regner …</dd><dt>Tiangong</dt><dd>Regner …</dd></dl>
+        <h2>Space stations</h2>
+        <dl class="kv" id="stations"><dt>ISS</dt><dd>Calculating …</dd><dt>Tiangong</dt><dd>Calculating …</dd></dl>
       </section>
       <section class="card">
-        <h2>Banedata</h2>
-        <dl class="kv" id="datainfo"><dt>Hentet</dt><dd>–</dd></dl>
+        <h2>Orbit data</h2>
+        <dl class="kv" id="datainfo"><dt>Fetched</dt><dd>–</dd></dl>
       </section>
     </aside>
   </div>

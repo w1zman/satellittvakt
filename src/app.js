@@ -12,18 +12,18 @@
     try { const v = localStorage.getItem('sv-place'); if (PLACES[v]) return v; } catch (e) {} return 'narvik'; })();
   setObserver(initialPlace);
   const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const num = (x, d = 0) => x.toFixed(d).replace('.', ',').replace('-', '−');
-  const DIRS = ['N', 'NNØ', 'NØ', 'ØNØ', 'Ø', 'ØSØ', 'SØ', 'SSØ', 'S', 'SSV', 'SV', 'VSV', 'V', 'VNV', 'NV', 'NNV'];
+  const num = (x, d = 0) => x.toFixed(d).replace('-', '−');
+  const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const dirName = a => DIRS[Math.round(((a % 360) + 360) % 360 / 22.5) % 16];
 
   // ---------- time in Oslo ----------
-  const WD = { Mon: 'man', Tue: 'tir', Wed: 'ons', Thu: 'tor', Fri: 'fre', Sat: 'lør', Sun: 'søn' };
-  const MON = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+  const WD = { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' };
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const fmtP = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Oslo', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
   function oslo(t) { const p = {}; for (const x of fmtP.formatToParts(new Date(t))) p[x.type] = x.value; return { y: +p.year, mo: +p.month, d: +p.day, h: p.hour === '24' ? '00' : p.hour, mi: p.minute, s: p.second, wd: WD[p.weekday] || p.weekday }; }
   const hm = t => { const o = oslo(t); return o.h + ':' + o.mi; };
   const dayKey = t => { const o = oslo(t); return o.y * 10000 + o.mo * 100 + o.d; };
-  const dateStr = t => { const o = oslo(t); return o.wd + ' ' + o.d + '. ' + MON[o.mo - 1]; };
+  const dateStr = t => { const o = oslo(t); return o.wd + ' ' + o.d + ' ' + MON[o.mo - 1]; };
 
   // ---------- astronomy helpers ----------
   function enu(x, y, z) { const dx = x - OBS[0], dy = y - OBS[1], dz = z - OBS[2];
@@ -41,7 +41,7 @@
 
   // ---------- objects ----------
   const OBJ = []; let N = 0;
-  const KIND_NAME = ['Romstasjon', '', 'Starlink'];
+  const KIND_NAME = ['Space station', '', 'Starlink'];
   function addObjects(rows, group) {
     for (const el of rows) {
       let s; try { s = O.init(el); } catch (e) { continue; }
@@ -52,7 +52,7 @@
     }
     N = OBJ.length;
   }
-  const kindLabel = o => o.kind === 0 ? 'Romstasjon' : o.kind === 2 ? 'Starlink' : /R\/B|DEB/.test(o.name) ? 'Rakettrinn' : 'Satellitt';
+  const kindLabel = o => o.kind === 0 ? 'Space station' : o.kind === 2 ? 'Starlink' : /R\/B|DEB/.test(o.name) ? 'Rocket body' : 'Satellite';
 
   // ---------- time model ----------
   let speed = 1, anchorWall = Date.now(), anchorSim = anchorWall, live = true;
@@ -130,7 +130,7 @@
     sp.material.map = tex; sp.material.needsUpdate = true; sp.scale.set(o.h * c.width / c.height, o.h, 1);
   }
   const DISPLAY = '"Big Shoulders Display", "Arial Narrow", sans-serif';
-  [['N', 0], ['Ø', 90], ['S', 180], ['V', 270]].forEach(([t, az]) => {
+  [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, az]) => {
     const s = makeLabel(t, { family: DISPLAY, weight: '800', px: 96, h: 1.25, color: t === 'N' ? '#ffc66b' : '#e4ecf7' });
     s.userData.compass = az; domeG.add(s);
   });
@@ -139,7 +139,7 @@
 
   // stars (J2000 RA/Dec deg, magnitude, labelled)
   const STARS = [
-    ['Nordstjerna', 37.95, 89.26, 2.0, 1], ['Vega', 279.23, 38.78, 0.0, 1], ['Deneb', 310.36, 45.28, 1.25, 1], ['Altair', 297.70, 8.87, 0.77, 1],
+    ['Polaris', 37.95, 89.26, 2.0, 1], ['Vega', 279.23, 38.78, 0.0, 1], ['Deneb', 310.36, 45.28, 1.25, 1], ['Altair', 297.70, 8.87, 0.77, 1],
     ['Capella', 79.17, 46.00, 0.08, 1], ['Arcturus', 213.92, 19.18, -0.05, 1], ['Aldebaran', 68.98, 16.51, 0.87, 1], ['Betelgeuse', 88.79, 7.41, 0.5, 1],
     ['Rigel', 78.63, -8.20, 0.13, 1], ['Procyon', 114.83, 5.22, 0.34, 0], ['Pollux', 116.33, 28.03, 1.14, 0], ['Castor', 113.65, 31.89, 1.58, 0],
     ['Regulus', 152.09, 11.97, 1.35, 0], ['Dubhe', 165.93, 61.75, 1.8, 0], ['Merak', 165.46, 56.38, 2.37, 0], ['Phecda', 178.46, 53.69, 2.44, 0],
@@ -153,9 +153,9 @@
   ];
   const SIDX = {}; STARS.forEach((s, i) => { SIDX[s[0]] = i; });
   const CONST = [
-    ['Karlsvogna', ['Dubhe', 'Merak', 'Phecda', 'Megrez', 'Dubhe', 'Megrez', 'Alioth', 'Mizar', 'Alkaid']],
-    ['Kassiopeia', ['Caph', 'Schedar', 'Gamma Cas', 'Ruchbah', 'Segin']],
-    ['Sommertrekanten', ['Vega', 'Deneb', 'Altair', 'Vega']],
+    ['Big Dipper', ['Dubhe', 'Merak', 'Phecda', 'Megrez', 'Dubhe', 'Megrez', 'Alioth', 'Mizar', 'Alkaid']],
+    ['Cassiopeia', ['Caph', 'Schedar', 'Gamma Cas', 'Ruchbah', 'Segin']],
+    ['Summer Triangle', ['Vega', 'Deneb', 'Altair', 'Vega']],
     ['Orion', ['Betelgeuse', 'Alnitak', 'Saiph', 'Rigel', 'Mintaka', 'Bellatrix', 'Betelgeuse', 'Alnitak', 'Alnilam', 'Mintaka']]
   ];
   const starPos = new Float32Array(STARS.length * 3), starSize = new Float32Array(STARS.length), starCol = new Float32Array(STARS.length * 4), starU = new Float32Array(STARS.length);
@@ -216,11 +216,11 @@
     const ac = []; for (let lo = 0; lo <= 360; lo += 2) ac.push(geoV(66.56, lo, 1.003));
     const acl = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ac), new THREE.LineDashedMaterial({ color: 0x9fd6ff, transparent: true, opacity: 0.45, dashSize: 0.02, gapSize: 0.015 })); acl.computeLineDistances(); globeG.add(acl); }
   const CITIES = [['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
-    ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['Nordpolen', 90, 0]];
+    ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['North Pole', 90, 0]];
   { const cp = new Float32Array(CITIES.length * 3), cs = new Float32Array(CITIES.length), cc = new Float32Array(CITIES.length * 4);
     CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = 3.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
-      const l = makeLabel(c[0], { px: 48, h: 0.032, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
-      l.position.copy(geoV(c[1], c[2], 1.02)); l.position.y += 0.008; l.userData.city = c[0]; globeG.add(l); });
+      const l = makeLabel(c[0], { px: 48, h: 0.022, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
+      l.position.copy(geoV(c[1], c[2], 1.014)); l.position.y += 0.0055; l.userData.city = c[0]; globeG.add(l); });
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(cp, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(cs, 1)); g.setAttribute('aCol', new THREE.BufferAttribute(cc, 4));
     const m = ptMat(); m.depthTest = true; globeG.add(new THREE.Points(g, m)); }
   // world map: Natural Earth 1:50m via world-atlas, loaded the first time the globe is shown
@@ -274,7 +274,7 @@
     const pg = new THREE.BufferGeometry(), v = geoV(LAT, LON, 1.005);
     pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([v.x, v.y, v.z]), 3)); pg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array([7]), 1)); pg.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array([1, 0.78, 0.42, 1]), 4));
     const pm = ptMat(); pm.depthTest = true; placeMark.add(new THREE.Points(pg, pm));
-    const l = makeLabel(PLACE.name, { px: 48, h: 0.045, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.022)); l.position.y += 0.01; placeMark.add(l);
+    const l = makeLabel(PLACE.name, { px: 48, h: 0.03, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.014)); l.position.y += 0.0067; placeMark.add(l);
   }
   buildPlaceMarker();
   const shadow = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 5, 64, 1, true), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
@@ -384,7 +384,7 @@
     selGeo.setDrawRange(0, n * 2); selGeo.attributes.position.needsUpdate = true; selGeo.attributes.color.needsUpdate = true;
   }
 
-  function skyState(el) { return el > -0.83 ? 'Dagslys' : el > -6 ? 'Borgerlig skumring' : el > -12 ? 'Nautisk skumring' : el > -18 ? 'Astronomisk skumring' : 'Mørkt'; }
+  function skyState(el) { return el > -0.83 ? 'Daylight' : el > -6 ? 'Civil twilight' : el > -12 ? 'Nautical twilight' : el > -18 ? 'Astronomical twilight' : 'Dark'; }
   let lastReadout = '';
   function updateReadout(t, sun) {
     const o = oslo(t), clock = o.h + ':' + o.mi + ':' + o.s;
@@ -392,24 +392,24 @@
     $('clock').textContent = clock;
     const off = Math.round((t - Date.now()) / 60000);
     let dl = dateStr(t);
-    if (!live) dl += ' · ' + (off === 0 ? 'nå' : (off > 0 ? '+' : '−') + (Math.abs(off) >= 60 ? Math.floor(Math.abs(off) / 60) + ' t ' : '') + (Math.abs(off) % 60) + ' min') + (speed > 1 ? ' · ' + speed + '×' : '');
+    if (!live) dl += ' · ' + (off === 0 ? 'now' : (off > 0 ? '+' : '−') + (Math.abs(off) >= 60 ? Math.floor(Math.abs(off) / 60) + ' h ' : '') + (Math.abs(off) % 60) + ' min') + (speed > 1 ? ' · ' + speed + '×' : '');
     $('dateline').textContent = dl;
-    $('sunline').textContent = 'Sola ' + num(sun.el, 1) + '° · ' + skyState(sun.el);
+    $('sunline').textContent = 'Sun ' + num(sun.el, 1) + '° · ' + skyState(sun.el);
     const parts = [];
     if (sun.el < -6) {
-      if (counts[0]) parts.push('<span class="b">' + (counts[0] === 1 ? '1 romstasjon' : counts[0] + ' romstasjoner') + '</span>');
-      parts.push('<span class="b">' + counts[1] + ' klare</span>');
+      if (counts[0]) parts.push('<span class="b">' + (counts[0] === 1 ? '1 space station' : counts[0] + ' space stations') + '</span>');
+      parts.push('<span class="b">' + counts[1] + ' bright</span>');
       if (starlinkState === 'ok') parts.push('<span class="s">' + counts[2] + ' Starlink</span>');
-      if (AUR.pN != null && Math.abs(t - Date.now()) < 90 * 60000) parts.push('<span class="a">nordlys ' + Math.round(AUR.pN) + ' %</span>');
-      $('nowline').innerHTML = 'Synlige: ' + parts.join(' · ');
-    } else $('nowline').textContent = 'For lyst til å se satellitter';
-    $('livetxt').textContent = live ? 'Live' : 'Spolt';
+      if (AUR.pN != null && Math.abs(t - Date.now()) < 90 * 60000) parts.push('<span class="a">aurora ' + Math.round(AUR.pN) + ' %</span>');
+      $('nowline').innerHTML = 'Visible: ' + parts.join(' · ');
+    } else $('nowline').textContent = 'Too bright to see satellites';
+    $('livetxt').textContent = live ? 'Live' : 'Shifted';
     const ti = $('time'); if (document.activeElement !== ti) ti.value = Math.max(-60, Math.min(720, off));
     // banner
     const msgs = [];
-    if (sun.el > -6) msgs.push(nextDark ? 'Himmelen er for lys nå. Det blir mørkt nok rundt ' + hm(nextDark) + (dayKey(nextDark) !== dayKey(t) ? ' (' + dateStr(nextDark) + ')' : '') + '.' : 'Himmelen er for lys til å se satellitter nå.');
+    if (sun.el > -6) msgs.push(nextDark ? 'The sky is too bright right now. It gets dark enough around ' + hm(nextDark) + (dayKey(nextDark) !== dayKey(t) ? ' (' + dateStr(nextDark) + ')' : '') + '.' : 'The sky is too bright to see satellites right now.');
     const oldest = Math.max(dataAgeDays(), starlinkState === 'ok' ? slAgeDays() : 0);
-    if (oldest > 4) msgs.push('Banedataene er ' + Math.floor(oldest) + ' dager gamle, så posisjonene kan bomme med flere grader.');
+    if (oldest > 4) msgs.push('The orbit data is ' + Math.floor(oldest) + ' days old, so positions may be off by several degrees.');
     $('banner').hidden = !msgs.length; $('bannertxt').textContent = msgs.join(' ');
   }
 
@@ -479,8 +479,8 @@
     if (!show) { tag.hidden = true; return; }
     const o = OBJ[j], t = simNow(), st = stateAt(o, t, Math.cos(O.gmst(t)), Math.sin(O.gmst(t)), sunNow.eci, false), alt = Math.hypot(st.x, st.y, st.z) - 6371;
     const nx = PASSES.find(ps => ps.j === j && ps.tEnd > t);
-    tag.innerHTML = '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · ' + Math.round(alt) + ' km opp</span><br><span>' + (el >= 0 ? num(el) + '° over horisonten mot ' + dirName(curAz[j]) : 'under horisonten') + ' · ' + (lit ? 'i sollys' : 'i jordskyggen') + '</span>' +
-      (nx ? '<br><span>' + (nx.tStart <= t ? 'Synlig nå, høyest ' : 'Neste: ') + num(nx.maxEl) + '° kl. ' + hm(nx.tMax) + '</span>' : '');
+    tag.innerHTML = '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · ' + Math.round(alt) + ' km up</span><br><span>' + (el >= 0 ? num(el) + '° above the horizon to the ' + dirName(curAz[j]) : 'below the horizon') + ' · ' + (lit ? 'in sunlight' : 'in Earth’s shadow') + '</span>' +
+      (nx ? '<br><span>' + (nx.tStart <= t ? 'Visible now, highest ' : 'Next: ') + num(nx.maxEl) + '° at ' + hm(nx.tMax) + '</span>' : '');
     tag.hidden = false;
     const r = stage.getBoundingClientRect(), tw = tag.offsetWidth, th = tag.offsetHeight; let left = p.x + 14, top = p.y - th / 2;
     if (left + tw > r.width - 8) left = p.x - tw - 14;
@@ -521,11 +521,11 @@
   function renderPasses() {
     const rows = $('rows'); rows.innerHTML = '';
     const now = Date.now(), list = PASSES.filter(p => p.tEnd >= now - 60000).slice(0, 40);
-    if (!list.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = nextDark ? 'Ingen klare passeringer mens det er mørkt de neste 12 timene. Neste mørke periode starter rundt ' + hm(nextDark) + '.' : 'Ingen klare passeringer de neste 12 timene.'; rows.appendChild(d); return; }
+    if (!list.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = nextDark ? 'No bright passes while it is dark in the next 12 hours. The next dark period starts around ' + hm(nextDark) + '.' : 'No bright passes in the next 12 hours.'; rows.appendChild(d); return; }
     list.forEach(p => {
       const o = OBJ[p.j], b = document.createElement('button'); b.type = 'button'; b.className = 'row' + (o.kind === 0 ? ' st' : ''); b.dataset.j = p.j; b.setAttribute('aria-pressed', String(sel === p.j));
       const onNow = p.tStart <= now && p.tEnd >= now, other = dayKey(p.tMax) !== dayKey(now);
-      b.innerHTML = '<span class="t">' + hm(p.tMax) + (onNow ? '<small class="on">nå</small>' : other ? '<small>' + oslo(p.tMax).wd + '</small>' : '') + '</span><span class="n"><b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · fra ' + dirName(p.azStart) + ' mot ' + dirName(p.azEnd) + '</span></span><span class="e' + (p.maxEl >= 60 ? ' hi' : '') + '">' + num(p.maxEl) + '°</span><span class="d">' + dirName(p.azMax) + '</span>';
+      b.innerHTML = '<span class="t">' + hm(p.tMax) + (onNow ? '<small class="on">now</small>' : other ? '<small>' + oslo(p.tMax).wd + '</small>' : '') + '</span><span class="n"><b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · from ' + dirName(p.azStart) + ' to ' + dirName(p.azEnd) + '</span></span><span class="e' + (p.maxEl >= 60 ? ' hi' : '') + '">' + num(p.maxEl) + '°</span><span class="d">' + dirName(p.azMax) + '</span>';
       b.addEventListener('click', () => {
         if (sel === p.j) { select(-1); return; }
         select(p.j);
@@ -541,7 +541,7 @@
     for (const id of [25544, 48274]) {
       const j = OBJ.findIndex(o => o.id === id); const name = id === 25544 ? 'ISS' : 'Tiangong';
       const dt = document.createElement('dt'); dt.textContent = name; const dd = document.createElement('dd'); dl.append(dt, dd);
-      if (j < 0) { dd.textContent = 'Ingen banedata.'; continue; }
+      if (j < 0) { dd.textContent = 'No orbit data.'; continue; }
       let first = null, maxAny = -90, maxT = 0, k0 = 0;
       for (let k = 0; k <= NSx; k++) {
         const t = t0 + k * STEP, gm = O.gmst(t), st = stateAt(OBJ[j], t, Math.cos(gm), Math.sin(gm), null, false);
@@ -549,10 +549,10 @@
         if (!first && st.el >= 10) { const s = sunAt(t); if (s.el < -6 && O.litFraction(O.prop(OBJ[j].s, t).r, s.eci) >= 0.5) first = { t, el: st.el, az: st.az }; }
         if (k - k0 > 600) { k0 = k; await sleep(); if (gen !== predGen) return; }
       }
-      if (first) dd.textContent = 'Neste synlige passering ' + dateStr(first.t) + ' kl. ' + hm(first.t) + ', mot ' + dirName(first.az) + '.';
-      else if (maxAny < 0) dd.textContent = 'Kommer aldri over horisonten sett fra ' + PLACE.name + '. Banen går ikke langt nok nord.';
-      else if (maxAny < 10) dd.textContent = 'Ingen synlige passeringer de neste ' + DAYS + ' dagene. Fra ' + PLACE.name + ' kommer den ikke høyere enn ' + num(maxAny) + '° over sørhorisonten, fordi banen ikke går langt nok nord.';
-      else dd.textContent = 'Ingen synlige passeringer de neste ' + DAYS + ' dagene. Når den går over ' + PLACE.name + ', er det enten lyst eller den er i jordskyggen.';
+      if (first) dd.textContent = 'Next visible pass ' + dateStr(first.t) + ' at ' + hm(first.t) + ', towards ' + dirName(first.az) + '.';
+      else if (maxAny < 0) dd.textContent = 'Never rises above the horizon as seen from ' + PLACE.name + '. Its orbit does not reach far enough north.';
+      else if (maxAny < 10) dd.textContent = 'No visible passes in the next ' + DAYS + ' days. From ' + PLACE.name + ' it gets no higher than ' + num(maxAny) + '° above the southern horizon, because its orbit does not reach far enough north.';
+      else dd.textContent = 'No visible passes in the next ' + DAYS + ' days. When it passes over ' + PLACE.name + ', it is either too bright or it is in Earth’s shadow.';
     }
   }
 
@@ -561,8 +561,8 @@
   const dataAgeDays = () => fetched ? (Date.now() - fetched) / 86400000 : 0;
   const slAgeDays = () => slFetched ? (Date.now() - slFetched) / 86400000 : 0;
   function ageHtml(t) {
-    const age = (Date.now() - t) / 86400000, h = Math.round(age * 24), cls = age < 1.5 ? 'ok' : age < 4 ? 'mid' : 'old', lbl = age < 1.5 ? 'fersk' : age < 4 ? 'brukbar' : 'gammel';
-    return esc(dateStr(t)) + ' kl. ' + hm(t) + ' (' + (h < 1 ? 'under 1 t' : h < 48 ? h + ' t' : Math.floor(age) + ' døgn') + ' siden)<span class="pill ' + cls + '">' + lbl + '</span>';
+    const age = (Date.now() - t) / 86400000, h = Math.round(age * 24), cls = age < 1.5 ? 'ok' : age < 4 ? 'mid' : 'old', lbl = age < 1.5 ? 'fresh' : age < 4 ? 'OK' : 'old';
+    return esc(dateStr(t)) + ' at ' + hm(t) + ' (' + (h < 1 ? 'under 1 h' : h < 48 ? h + ' h' : Math.floor(age) + ' days') + ' ago)<span class="pill ' + cls + '">' + lbl + '</span>';
   }
   function parsePolar(txt) {
     const nl = txt.indexOf('\n'), head = txt.slice(0, nl), body = txt.slice(nl + 1).trim(), m = /T0=(\S+)/.exec(head);
@@ -573,23 +573,23 @@
   function renderDataInfo() {
     const dl = $('datainfo'); dl.innerHTML = '';
     const add = (k, html) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.innerHTML = html; dl.append(dt, dd); };
-    if (fetched) add('Klare', ageHtml(fetched));
+    if (fetched) add('Bright', ageHtml(fetched));
     if (slFetched && starlinkState !== 'none') add('Starlink', ageHtml(slFetched));
     const nb = OBJ.filter(o => o.kind !== 2).length, ns = OBJ.filter(o => o.kind === 2).length;
-    add('Antall', nb + ' klare objekter og romstasjoner' + (ns ? ' · ' + ns.toLocaleString('nb-NO') + ' Starlink' : ''));
-    if (starlinkState === 'ok') add('Utvalg', slInfo && slInfo.format === 'polar'
-      ? 'Starlink i baner med 70° og 97° helning, de som går høyt over ' + PLACE.name + '. Starlink i 43° og 53° helning kommer aldri mer enn noen få grader over sørhorisonten herfra.'
-      : 'Starlink med mer enn 50° helning. De i 43° helning kommer aldri over horisonten i ' + PLACE.name + '.');
-    else if (starlinkState === 'loading') add('Utvalg', 'Laster Starlink …');
-    else if (starlinkState === 'old') add('Utvalg', 'Starlink-dataene er for gamle til å gi riktige posisjoner, så laget er slått av til neste oppdatering.');
-    else add('Utvalg', 'Starlink-data er ikke tilgjengelig akkurat nå.');
+    add('Count', nb + ' bright objects and space stations' + (ns ? ' · ' + ns.toLocaleString('en-GB') + ' Starlink' : ''));
+    if (starlinkState === 'ok') add('Selection', slInfo && slInfo.format === 'polar'
+      ? 'Starlink in orbits with 70° and 97° inclination, the ones that pass high over ' + PLACE.name + '. Starlink at 43° and 53° inclination never gets more than a few degrees above the southern horizon from here.'
+      : 'Starlink with more than 50° inclination. The ones at 43° inclination never rise above the horizon in ' + PLACE.name + '.');
+    else if (starlinkState === 'loading') add('Selection', 'Loading Starlink …');
+    else if (starlinkState === 'old') add('Selection', 'The Starlink data is too old to give correct positions, so the layer is off until the next update.');
+    else add('Selection', 'Starlink data is not available right now.');
   }
   function renderChips() {
     const c = [0, 0, 0]; OBJ.forEach(o => c[o.kind]++);
     $('c-station').textContent = c[0]; $('c-bright').textContent = c[1];
     const sb = $('l-starlink');
-    if (starlinkState === 'ok') { $('c-starlink').textContent = c[2].toLocaleString('nb-NO'); sb.disabled = false; }
-    else { $('c-starlink').textContent = starlinkState === 'loading' ? '…' : starlinkState === 'old' ? 'for gamle data' : 'ikke lastet'; sb.disabled = true; sb.setAttribute('aria-pressed', 'false'); }
+    if (starlinkState === 'ok') { $('c-starlink').textContent = c[2].toLocaleString('en-GB'); sb.disabled = false; }
+    else { $('c-starlink').textContent = starlinkState === 'loading' ? '…' : starlinkState === 'old' ? 'data too old' : 'not loaded'; sb.disabled = true; sb.setAttribute('aria-pressed', 'false'); }
   }
 
   // ---------- controls ----------
@@ -621,11 +621,24 @@
   // ---------- northern lights: NOAA SWPC (OVATION, Kp, solar wind) + MET Norway (clouds), fetched live in the browser ----------
   const AUR = { grid: null, ovObs: null, ovFc: null, kp: null, kpTime: null, kpfc: [], bz: null, bt: null, speed: null, swTime: null, met: [], err: {}, pN: null, pSky: null, skyDir: null };
   let showAurora = true;
-  const aurUni = (px) => ({ uPx: { value: px }, uFade: { value: 1 }, uMax: { value: 120 } });
-  const AUR_VS = 'attribute vec4 aCol; attribute float aAng; uniform float uPx; uniform float uMax; varying vec4 vCol; void main(){ vCol = aCol; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = clamp(aAng * uPx, 1.5, uMax); }';
+  // aGeo = (longitude deg, latitude deg, height 0..1). Slow travelling waves along the oval, a gentle shimmer up the curtain,
+  // and a tiny sideways sway (rotation about the local vertical/polar axis) so the curtains ripple. Mean brightness ≈ unchanged.
+  const aurTime = { value: 0 };
+  const aurUni = (px, wob) => ({ uPx: { value: px }, uFade: { value: 1 }, uMax: { value: 120 }, uTime: aurTime, uWob: { value: wob } });
+  const AUR_VS = [
+    'attribute vec4 aCol; attribute float aAng; attribute vec3 aGeo; uniform float uPx; uniform float uMax; uniform float uTime; uniform float uWob; varying vec4 vCol;',
+    'void main(){',
+    ' float w = sin(aGeo.x * 0.35 + uTime * 0.6 + sin(aGeo.y * 0.9 + uTime * 0.25) * 1.6);',
+    ' float sh = sin(aGeo.z * 5.0 - uTime * 0.9 + aGeo.x * 0.7);',
+    ' float k = (0.6 + 0.4 * w) * (0.9 + 0.1 * sh) * 1.85;',
+    ' vCol = vec4(aCol.rgb, aCol.a * k);',
+    ' float ang = uWob * sin(aGeo.y * 1.3 + aGeo.x * 0.12 + uTime * 0.4) * (0.6 + 0.4 * aGeo.z);',
+    ' float c = cos(ang), s = sin(ang);',
+    ' vec3 p = vec3(c * position.x + s * position.z, position.y, -s * position.x + c * position.z);',
+    ' gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); gl_PointSize = clamp(aAng * uPx, 1.5, uMax); }'].join('\n');
   const AUR_FS = 'varying vec4 vCol; uniform float uFade; void main(){ vec2 p = gl_PointCoord - 0.5; float d = dot(p, p); float a = exp(-d * 14.0) * vCol.a * uFade; if (a < 0.003) discard; gl_FragColor = vec4(vCol.rgb * a, a); }';
-  const aurDomeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400), vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
-  const aurGlobeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400), vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  const aurDomeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400, 0.006),vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
+  const aurGlobeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400, 0.004),vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   aurGlobeMat.uniforms.uMax.value = 40;
   let aurDome = null, aurGlobe = null;
   const HEIGHTS = [100, 118, 140, 168, 205, 250], HF = [0.5, 0.62, 0.55, 0.36, 0.2, 0.11];
@@ -641,7 +654,7 @@
     if (aurDome) { scene.remove(aurDome); aurDome.geometry.dispose(); }
     if (aurGlobe) { globeG.remove(aurGlobe); aurGlobe.geometry.dispose(); }
     // dome: emission columns within sight of the observer
-    const P = [], C = [], A = []; let pSky = 0, skyAz = null;
+    const P = [], C = [], A = [], GE = []; let pSky = 0, skyAz = null;
     for (let lat = 52; lat <= 86; lat++) for (let lo = -45; lo <= 80; lo++) {
       const p = g[(((lo % 360) + 360) % 360) * 181 + lat + 90]; if (p < 3) continue;
       for (let h = 0; h < HEIGHTS.length; h++) {
@@ -651,23 +664,25 @@
         const q = toDome(v[0] / L, v[1] / L, v[2] / L, R * 0.955); P.push(q.x, q.y, q.z);
         const ext = 0.22 + 0.78 * Math.min(1, Math.max(0, el) / 25);
         const a = Math.min(1, p / 32) * HF[h] * ext, c = HCOL[h]; C.push(c[0], c[1], c[2], a);
-        A.push(Math.min(0.7, 150 / L));
+        A.push(Math.min(0.7, 150 / L)); GE.push(lo, lat, h / (HEIGHTS.length - 1));
       }
     }
     AUR.pSky = pSky; AUR.skyDir = skyAz;
     let geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); geo.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array(C), 4)); geo.setAttribute('aAng', new THREE.BufferAttribute(new Float32Array(A), 1));
+    geo.setAttribute('aGeo', new THREE.BufferAttribute(new Float32Array(GE), 3));
     aurDome = new THREE.Points(geo, aurDomeMat); aurDome.renderOrder = 2; aurDome.frustumCulled = false; scene.add(aurDome);
     // globe: the whole oval, both hemispheres, at 110 km
-    const P2 = [], C2 = [], A2 = [];
+    const P2 = [], C2 = [], A2 = [], G2 = [];
     for (let lo = 0; lo < 360; lo++) for (let y = 0; y <= 180; y++) {
       const p = g[lo * 181 + y], lat = y - 90; if (p < 3 || Math.abs(lat) < 35) continue;
       const v = geoV(lat, lo, 1 + 110 / RE), a = Math.min(1, p / 22);
-      P2.push(v.x, v.y, v.z); C2.push(0.36, 1.0, 0.62, 0.95 * a); A2.push(0.034);
-      const w = geoV(lat, lo, 1 + 180 / RE); P2.push(w.x, w.y, w.z); C2.push(0.45, 1.0, 0.7, 0.35 * a); A2.push(0.075);
+      P2.push(v.x, v.y, v.z); C2.push(0.36, 1.0, 0.62, 0.7 * a); A2.push(0.034); G2.push(lo, lat, 0);
+      const w = geoV(lat, lo, 1 + 180 / RE); P2.push(w.x, w.y, w.z); C2.push(0.45, 1.0, 0.7, 0.25 * a); A2.push(0.075); G2.push(lo, lat, 1);
     }
     geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P2), 3)); geo.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array(C2), 4)); geo.setAttribute('aAng', new THREE.BufferAttribute(new Float32Array(A2), 1));
+    geo.setAttribute('aGeo', new THREE.BufferAttribute(new Float32Array(G2), 3));
     aurGlobe = new THREE.Points(geo, aurGlobeMat); aurGlobe.renderOrder = 3; aurGlobe.frustumCulled = false; globeG.add(aurGlobe);
   }
   function updateAurora(t, sun) {
@@ -675,6 +690,7 @@
     const on = showAurora && nearNow && fresh;
     const dark = Math.max(0, Math.min(1, (-sun.el - 4) / 8));
     const pxScreen = renderer.getPixelRatio() * stage.clientHeight / (camera.fov * D2R);
+    if (!reduce) aurTime.value = performance.now() / 1000;
     if (aurDome) { aurDome.visible = on && mode !== 'globe' && dark > 0; aurDomeMat.uniforms.uFade.value = dark;
       aurDomeMat.uniforms.uPx.value = mode === 'look' ? pxScreen : pxScreen * R / Math.max(1, camera.position.length()); }
     if (aurGlobe) { aurGlobe.visible = on && mode === 'globe'; aurGlobeMat.uniforms.uPx.value = pxScreen / Math.max(0.5, camera.position.distanceTo(narv.clone().multiplyScalar(0.55))); }
@@ -720,20 +736,20 @@
   function renderAurora() {
     const now = Date.now(), sun = sunAt(now), cl = cloudAt(now), pN = AUR.pN, pSky = AUR.pSky;
     const vEl = $('a-verdict'), sum = $('a-summary');
-    let verdict = 'Henter …', cls = 'wait', text = '';
+    let verdict = 'Loading …', cls = 'wait', text = '';
     const score = pN == null ? null : Math.max(pN, (pSky || 0) * 0.8);
-    if (AUR.err.ov && pN == null) { verdict = 'Ingen data'; cls = 'low'; text = 'Fikk ikke hentet nordlysvarselet fra NOAA akkurat nå. Siden prøver igjen om noen minutter.'; }
+    if (AUR.err.ov && pN == null) { verdict = 'No data'; cls = 'low'; text = 'Could not fetch the northern lights forecast from NOAA right now. The page will try again in a few minutes.'; }
     else if (score != null) {
       const dir = AUR.skyDir != null ? dirName(AUR.skyDir) : null;
-      const where = pSky > pN + 3 && dir ? ' Sterkest mot ' + dir + ', opp mot ' + Math.round(pSky) + ' % der.' : '';
-      if (sun.el > -8) { verdict = 'For lyst'; cls = 'low'; text = 'Himmelen er for lys til nordlys nå.' + (nextDark ? ' Det blir mørkt rundt ' + hm(nextDark) + '.' : '') + ' Varselet nedenfor viser aktiviteten.'; }
-      else if (cl && cl.c >= 85) { verdict = 'Overskyet'; cls = 'cloud'; text = 'Det er ' + Math.round(cl.c) + ' % skydekke over ' + PLACE.name + ', så nordlyset blir vanskelig å se selv om aktiviteten er ' + (score >= 12 ? 'god' : 'lav') + '.'; }
+      const where = pSky > pN + 3 && dir ? ' Strongest to the ' + dir + ', up to ' + Math.round(pSky) + ' % there.' : '';
+      if (sun.el > -8) { verdict = 'Too bright'; cls = 'low'; text = 'The sky is too bright for northern lights right now.' + (nextDark ? ' It gets dark around ' + hm(nextDark) + '.' : '') + ' The forecast below shows the activity.'; }
+      else if (cl && cl.c >= 85) { verdict = 'Cloudy'; cls = 'cloud'; text = 'There is ' + Math.round(cl.c) + ' % cloud cover over ' + PLACE.name + ', so the northern lights will be hard to see even though activity is ' + (score >= 12 ? 'good' : 'low') + '.'; }
       else {
-        if (score >= 30) { verdict = 'Gode sjanser'; cls = 'good'; } else if (score >= 12) { verdict = 'Mulig'; cls = 'mid'; } else if (score >= 5) { verdict = 'Svak sjanse'; cls = 'mid'; } else { verdict = 'Lite sannsynlig'; cls = 'low'; }
-        text = (score >= 12 ? 'Gå ut og se, helst bort fra gatelys.' : score >= 5 ? 'Svakt nordlys kan vises lavt på himmelen, best sett fra et mørkt sted.' : 'Lite aktivitet nå.') + where + (cl && cl.c >= 50 ? ' Det er delvis skyet (' + Math.round(cl.c) + ' %).' : '');
+        if (score >= 30) { verdict = 'Good chances'; cls = 'good'; } else if (score >= 12) { verdict = 'Possible'; cls = 'mid'; } else if (score >= 5) { verdict = 'Slight chance'; cls = 'mid'; } else { verdict = 'Unlikely'; cls = 'low'; }
+        text = (score >= 12 ? 'Go out and look, ideally away from street lights.' : score >= 5 ? 'Faint northern lights may show low in the sky, best seen from a dark spot.' : 'Little activity right now.') + where + (cl && cl.c >= 50 ? ' It is partly cloudy (' + Math.round(cl.c) + ' %).' : '');
       }
     }
-    vEl.textContent = verdict; vEl.className = 'verdict ' + cls; sum.textContent = text || 'Henter data fra NOAA og Meteorologisk institutt …';
+    vEl.textContent = verdict; vEl.className = 'verdict ' + cls; sum.textContent = text || 'Loading data from NOAA and the Norwegian Meteorological Institute …';
     $('a-prob').textContent = pN == null ? '–' : Math.round(pN) + ' %';
     $('a-kp').textContent = AUR.kp == null ? '–' : num(AUR.kp, 1); $('a-kp').className = AUR.kp == null ? '' : 'kp-' + kpCls(AUR.kp);
     $('a-cloud').textContent = cl ? Math.round(cl.c) + ' %' : '–';
@@ -741,23 +757,23 @@
     // solar wind
     const sw = $('a-wind'); sw.innerHTML = '';
     const add = (k, html) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.innerHTML = html; sw.append(dt, dd); };
-    if (AUR.bz != null) add('Bz', '<b class="' + (AUR.bz <= -5 ? 'good' : AUR.bz < 0 ? 'mid' : '') + '">' + num(AUR.bz, 0) + ' nT</b> · ' + (AUR.bz < 0 ? 'peker sørover, det hjelper nordlyset' : 'peker nordover, det demper nordlyset'));
-    if (AUR.speed != null) add('Solvind', '<b class="' + (AUR.speed >= 550 ? 'good' : AUR.speed >= 450 ? 'mid' : '') + '">' + Math.round(AUR.speed) + ' km/s</b> · ' + (AUR.speed >= 550 ? 'rask' : AUR.speed >= 450 ? 'litt rask' : 'rolig'));
-    if (AUR.bz == null && AUR.speed == null) add('Solvind', AUR.err.sw ? 'Ikke tilgjengelig akkurat nå' : 'Henter …');
+    if (AUR.bz != null) add('Bz', '<b class="' + (AUR.bz <= -5 ? 'good' : AUR.bz < 0 ? 'mid' : '') + '">' + num(AUR.bz, 0) + ' nT</b> · ' + (AUR.bz < 0 ? 'pointing south, which helps the northern lights' : 'pointing north, which dampens the northern lights'));
+    if (AUR.speed != null) add('Solar wind', '<b class="' + (AUR.speed >= 550 ? 'good' : AUR.speed >= 450 ? 'mid' : '') + '">' + Math.round(AUR.speed) + ' km/s</b> · ' + (AUR.speed >= 550 ? 'fast' : AUR.speed >= 450 ? 'fairly fast' : 'calm'));
+    if (AUR.bz == null && AUR.speed == null) add('Solar wind', AUR.err.sw ? 'Not available right now' : 'Loading …');
     // Kp forecast: next 8 three-hour blocks
     const kb = $('a-kpfc'); kb.innerHTML = '';
     const blocks = AUR.kpfc.filter(r => r.t + 3 * 3600000 > now).slice(0, 8);
     blocks.forEach(r => { const d = document.createElement('div'); d.className = 'kb ' + kpCls(r.kp) + (r.t <= now ? ' cur' : '');
-      d.innerHTML = '<i style="height:' + Math.max(6, r.kp / 9 * 100).toFixed(0) + '%"></i><b>' + num(r.kp, 0) + '</b><span>' + oslo(r.t).h + '</span>'; d.title = 'Kp ' + num(r.kp, 1) + ' fra ' + hm(r.t); kb.appendChild(d); });
-    if (!blocks.length) kb.innerHTML = '<p class="m">' + (AUR.err.fc ? 'Kp-varselet er ikke tilgjengelig akkurat nå.' : 'Henter Kp-varsel …') + '</p>';
+      d.innerHTML = '<i style="height:' + Math.max(6, r.kp / 9 * 100).toFixed(0) + '%"></i><b>' + num(r.kp, 0) + '</b><span>' + oslo(r.t).h + '</span>'; d.title = 'Kp ' + num(r.kp, 1) + ' from ' + hm(r.t); kb.appendChild(d); });
+    if (!blocks.length) kb.innerHTML = '<p class="m">' + (AUR.err.fc ? 'The Kp forecast is not available right now.' : 'Loading Kp forecast …') + '</p>';
     // clouds next 12 h
     const cb = $('a-clouds'); cb.innerHTML = '';
     const hrs = AUR.met.filter(s => s.t >= now - 30 * 60000).slice(0, 12);
-    hrs.forEach((s, i) => { const d = document.createElement('div'); d.className = 'cb'; d.title = Math.round(s.c) + ' % skydekke kl. ' + hm(s.t);
+    hrs.forEach((s, i) => { const d = document.createElement('div'); d.className = 'cb'; d.title = Math.round(s.c) + ' % cloud cover at ' + hm(s.t);
       d.innerHTML = '<i style="height:' + Math.max(4, s.c).toFixed(0) + '%"></i><span>' + (i % 3 === 0 ? oslo(s.t).h : '') + '</span>'; cb.appendChild(d); });
-    if (!hrs.length) cb.innerHTML = '<p class="m">' + (AUR.err.met ? 'Skyvarselet er ikke tilgjengelig akkurat nå.' : 'Henter skyvarsel …') + '</p>';
+    if (!hrs.length) cb.innerHTML = '<p class="m">' + (AUR.err.met ? 'The cloud forecast is not available right now.' : 'Loading cloud forecast …') + '</p>';
     const upd = [AUR.ovObs, AUR.kpTime].filter(Boolean);
-    $('a-updated').textContent = upd.length ? 'Nordlysdata fra ' + hm(Math.max(...upd)) + '.' : '';
+    $('a-updated').textContent = upd.length ? 'Northern lights data from ' + hm(Math.max(...upd)) + '.' : '';
   }
   $('l-aurora').addEventListener('click', e => { showAurora = !showAurora; e.currentTarget.setAttribute('aria-pressed', String(showAurora)); });
   function startAurora() {
@@ -770,9 +786,9 @@
   // ---------- place switch ----------
   function applyPlaceText() {
     document.querySelectorAll('.pname').forEach(e => { e.textContent = PLACE.name; });
-    $('pcoords').textContent = num(LAT, 2) + '° N ' + num(LON, 2) + '° Ø';
-    document.title = 'Satellittvakt ' + PLACE.name;
-    $('cv').setAttribute('aria-label', '3D-visning av satellitter over ' + PLACE.name);
+    $('pcoords').textContent = num(LAT, 2) + '° N ' + num(LON, 2) + '° E';
+    document.title = 'Satellite Watch ' + PLACE.name;
+    $('cv').setAttribute('aria-label', '3D view of satellites over ' + PLACE.name);
     document.querySelectorAll('.place button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === PLACE.key)));
   }
   function setPlace(key) {
@@ -786,7 +802,7 @@
     select(-1); force = true; lastScan = -1e15;
     applyPlaceText(); paintRail(); renderDataInfo();
     if (AUR.grid) buildAurora(); AUR.met = []; renderAurora(); loadMet();
-    predGen++; $('rows').innerHTML = '<div class="empty">Regner ut passeringer …</div>'; PASSES = [];
+    predGen++; $('rows').innerHTML = '<div class="empty">Calculating passes …</div>'; PASSES = [];
     predictPasses().then(predictStations);
   }
   document.querySelectorAll('.place button').forEach(b => b.addEventListener('click', () => setPlace(b.dataset.place)));
@@ -813,7 +829,7 @@
     fetched = vInfo.fetched ? Date.parse(vInfo.fetched) : null;
     slInfo = meta.starlink || null; slFetched = slInfo && slInfo.fetched ? Date.parse(slInfo.fetched) : null;
     let vis;
-    try { vis = await getText(vInfo.file || 'visual.csv'); } catch (e) { $('loading').textContent = 'Fant ikke banedataene. Last inn siden på nytt.'; return; }
+    try { vis = await getText(vInfo.file || 'visual.csv'); } catch (e) { $('loading').textContent = 'Could not find the orbit data. Please reload the page.'; return; }
     addObjects(O.parseCSV(vis), 'visual'); buildBuffers();
     $('loading').hidden = true; renderChips(); renderDataInfo();
     requestAnimationFrame(frame);
