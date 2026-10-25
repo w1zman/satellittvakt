@@ -1401,6 +1401,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   }
   function openFull() {
     setFull(true);
+    // Inside the iPhone app, skip iOS's own web full screen (it adds a site-address bar and "swipe down to exit");
+    // the CSS full-screen overlay set by setFull(true) already fills the whole app window.
+    if (document.documentElement.classList.contains('in-app')) return;
     const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
     if (req) { try { const r = req.call(stage); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
   }
