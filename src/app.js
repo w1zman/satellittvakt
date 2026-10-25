@@ -284,7 +284,7 @@
 
   // dynamic satellite buffers (rebuilt when the object count changes)
   const TR = 8, TR_DT = 12000, MAXTR = 2500;
-  let pPos, pCol, pSize, pGeo, satPts, trPos, trCol, trGeo, trails, cur, curVis, curEl, curAz, curLit, cand;
+  let pPos, pCol, pSize, pGeo, satPts, trPos, trCol, trGeo, trails, cur, curVis, curEl, curAz, curLit, curRng, cand;
   function buildBuffers() {
     if (satPts) { scene.remove(satPts); pGeo.dispose(); }
     if (trails) { scene.remove(trails); trGeo.dispose(); }
@@ -296,7 +296,7 @@
     trGeo.setAttribute('position', new THREE.BufferAttribute(trPos, 3)); trGeo.setAttribute('color', new THREE.BufferAttribute(trCol, 3));
     trails = new THREE.LineSegments(trGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     trails.renderOrder = 3; trails.frustumCulled = false; scene.add(trails);
-    cur = new Float32Array(N * 3); curVis = new Uint8Array(N); curEl = new Float32Array(N).fill(-90); curAz = new Float32Array(N); curLit = new Uint8Array(N); cand = new Uint8Array(N);
+    cur = new Float32Array(N * 3); curVis = new Uint8Array(N); curEl = new Float32Array(N).fill(-90); curAz = new Float32Array(N); curLit = new Uint8Array(N); curRng = new Float32Array(N).fill(1e9); cand = new Uint8Array(N);
     lastScan = -1e15;
   }
   const SELN = 81, selPos = new Float32Array(SELN * 6), selCol = new Float32Array(SELN * 6), selGeo = new THREE.BufferGeometry();
@@ -305,6 +305,34 @@
   selLine.renderOrder = 5; selLine.frustumCulled = false; selLine.visible = false; selGeo.setDrawRange(0, 0); scene.add(selLine);
   const ringTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.strokeStyle = '#ffc66b'; x.lineWidth = 4; x.beginPath(); x.arc(32, 32, 26, 0, Math.PI * 2); x.stroke(); return new THREE.CanvasTexture(c); })();
   const selRing = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTex, transparent: true, depthTest: false, depthWrite: false })); selRing.renderOrder = 11; selRing.visible = false; scene.add(selRing);
+  // closest satellite in view (sunlit, above the horizon, layer on): pulsing green halo. Prefers ones coming closer.
+  const haloTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.strokeStyle = '#7be3a8';
+    x.lineWidth = 7; x.beginPath(); x.arc(64, 64, 42, 0, Math.PI * 2); x.stroke(); x.globalAlpha = 0.4; x.lineWidth = 4; x.beginPath(); x.arc(64, 64, 57, 0, Math.PI * 2); x.stroke(); return new THREE.CanvasTexture(c); })();
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, transparent: true, depthTest: false, depthWrite: false })); halo.renderOrder = 12; halo.visible = false; scene.add(halo);
+  const CLOSE = { j: -1, rng: 0, appr: false, wall: 0 };
+  function findClosest() {
+    const t = simNow() + 10000 * Math.max(1, Math.min(speed, 6)), g = O.gmst(t), c = Math.cos(g), s = Math.sin(g);
+    let best = -1, score = Infinity, appr = false, rng = 0;
+    for (let j = 0; j < N; j++) {
+      if (!curVis[j] || !curLit[j] || curEl[j] < 0) continue;
+      const r = curRng[j], later = stateAt(OBJ[j], t, c, s, null, false).rng, a = later < r, sc = a ? r : r + 1e6;
+      if (sc < score) { score = sc; best = j; appr = a; rng = r; }
+    }
+    CLOSE.j = best; CLOSE.appr = appr; CLOSE.rng = rng;
+  }
+  function updateHalo() {
+    const now = performance.now();
+    if (now - CLOSE.wall > 500) { CLOSE.wall = now; if (N) findClosest(); }
+    const j = CLOSE.j;
+    if (j < 0 || !curVis[j] || !curLit[j] || curEl[j] < 0) { halo.visible = false; return; }
+    const x = cur[j * 3], y = cur[j * 3 + 1], z = cur[j * 3 + 2];
+    if (occluded(x, y, z)) { halo.visible = false; return; }
+    halo.position.set(x, y, z);
+    const base = mode === 'look' ? R * 0.07 * (camera.fov / 90) : camera.position.distanceTo(halo.position) * 0.06;
+    const p = reduce ? 1 : 0.5 + 0.5 * Math.sin(now / 1000 * Math.PI * 2 / 1.3);
+    const k = base * (reduce ? 1.6 : 1.4 + 0.45 * p);
+    halo.scale.set(k, k, 1); halo.material.opacity = reduce ? 0.9 : 0.3 + 0.7 * p; halo.visible = true;
+  }
 
   const COL = [[1.0, 0.56, 0.42], [1.0, 0.78, 0.42], [0.62, 0.84, 1.0]], SHADE = [0.33, 0.38, 0.48];
   const BASEA = [1.0, 1.0, 0.85], BASES = [9, 7.5, 4.2], TRA = [0.8, 0.7, 0.42];
@@ -318,7 +346,7 @@
     for (let j = 0; j < N; j++) { const st = stateAt(OBJ[j], t, sun.c, sun.s, sun.eci, true); writeState(j, st); cand[j] = st.el > -15 ? 1 : 0; }
     lastScan = t; lastScanWall = performance.now();
   }
-  function writeState(j, st) { toScene(st, V); cur[j * 3] = V.x; cur[j * 3 + 1] = V.y; cur[j * 3 + 2] = V.z; curEl[j] = st.el; curAz[j] = st.az; curLit[j] = st.lit >= 0.5 ? 1 : 0; }
+  function writeState(j, st) { toScene(st, V); cur[j * 3] = V.x; cur[j * 3 + 1] = V.y; cur[j * 3 + 2] = V.z; curEl[j] = st.el; curAz[j] = st.az; curRng[j] = st.rng; curLit[j] = st.lit >= 0.5 ? 1 : 0; }
 
   let rr = 0;
   function update() {
@@ -406,6 +434,8 @@
       $('nowline').innerHTML = 'Visible: ' + parts.join(' · ');
     } else $('nowline').textContent = 'Too bright to see satellites';
     $('livetxt').textContent = live ? 'Live' : 'Shifted';
+    const cj = CLOSE.j;
+    $('closeline').innerHTML = cj >= 0 ? '<i></i>Closest: ' + esc(OBJ[cj].name) + ' · ' + Math.round(CLOSE.rng).toLocaleString('en-GB') + ' km · ' + (CLOSE.appr ? 'coming closer' : 'moving away') : '';
     const ti = $('time'); if (document.activeElement !== ti) ti.value = Math.max(-60, Math.min(720, off));
     // banner
     const msgs = [];
@@ -922,7 +952,7 @@
   new ResizeObserver(resize).observe(stage);
   function frame() {
     if (simNow() > Date.now() + 12 * 3600000 || simNow() < Date.now() - 2 * 3600000) goLive();
-    update(); placeCamera(); renderer.render(scene, camera); updateTag(); updateHeading();
+    update(); placeCamera(); renderer.render(scene, camera); updateTag(); updateHalo(); updateHeading();
     requestAnimationFrame(frame);
   }
   const relabel = () => labels.forEach(drawLabel);

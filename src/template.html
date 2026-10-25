@@ -59,6 +59,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--sun); outli
 .clock { font-family: var(--f-display); font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .readout .sub { font-family: var(--f-data); font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; }
 .readout .now { font-family: var(--f-data); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.readout .close { font-family: var(--f-data); font-size: 11.5px; color: var(--live); font-variant-numeric: tabular-nums; max-width: min(360px, 74vw); margin-left: auto; text-align: right; }
+.readout .close:empty { display: none; }
+.readout .close i { display: inline-block; vertical-align: -1px; margin-right: 6px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--live); animation: pulse 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .readout .close i { animation: none; } }
 .now .s { color: var(--ice); } .now .b { color: var(--sun); } .now .a { color: var(--aurora); }
 @media (max-width: 520px) { .clock { font-size: 30px; } .modes button { padding: 6px 9px; font-size: 12px; } }
 .tag { position: absolute; left: 0; top: 0; pointer-events: none; background: rgba(6,10,19,.88); border: 1px solid var(--line); border-left: 2px solid var(--sun); border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.35; max-width: 230px; }
@@ -224,6 +228,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
           <div class="sub" id="dateline"></div>
           <div class="sub" id="sunline"></div>
           <div class="now" id="nowline"></div>
+          <div class="close" id="closeline"></div>
         </div>
         <div class="tag" id="tag" hidden></div>
         <div class="banner" id="banner" hidden><span id="bannertxt"></span></div>
@@ -253,7 +258,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i>Northern lights <small id="c-aurora">–</small></button>
         <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i>Show those in Earth's shadow</button>
       </div>
-      <p class="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The stars are included for orientation.</p>
+      <p class="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The pulsing green ring marks the closest sunlit satellite in view, preferring one that is coming closer. The stars are included for orientation.</p>
     </section>
 
     <aside>

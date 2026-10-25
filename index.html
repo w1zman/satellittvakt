@@ -76,6 +76,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--sun); outli
 .clock { font-family: var(--f-display); font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .readout .sub { font-family: var(--f-data); font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; }
 .readout .now { font-family: var(--f-data); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.readout .close { font-family: var(--f-data); font-size: 11.5px; color: var(--live); font-variant-numeric: tabular-nums; max-width: min(360px, 74vw); margin-left: auto; text-align: right; }
+.readout .close:empty { display: none; }
+.readout .close i { display: inline-block; vertical-align: -1px; margin-right: 6px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--live); animation: pulse 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .readout .close i { animation: none; } }
 .now .s { color: var(--ice); } .now .b { color: var(--sun); } .now .a { color: var(--aurora); }
 @media (max-width: 520px) { .clock { font-size: 30px; } .modes button { padding: 6px 9px; font-size: 12px; } }
 .tag { position: absolute; left: 0; top: 0; pointer-events: none; background: rgba(6,10,19,.88); border: 1px solid var(--line); border-left: 2px solid var(--sun); border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.35; max-width: 230px; }
@@ -242,6 +246,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
           <div class="sub" id="dateline"></div>
           <div class="sub" id="sunline"></div>
           <div class="now" id="nowline"></div>
+          <div class="close" id="closeline"></div>
         </div>
         <div class="tag" id="tag" hidden></div>
         <div class="banner" id="banner" hidden><span id="bannertxt"></span></div>
@@ -271,7 +276,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i>Northern lights <small id="c-aurora">–</small></button>
         <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i>Show those in Earth's shadow</button>
       </div>
-      <p class="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The stars are included for orientation.</p>
+      <p class="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The pulsing green ring marks the closest sunlit satellite in view, preferring one that is coming closer. The stars are included for orientation.</p>
     </section>
 
     <aside>
@@ -745,7 +750,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 
   // dynamic satellite buffers (rebuilt when the object count changes)
   const TR = 8, TR_DT = 12000, MAXTR = 2500;
-  let pPos, pCol, pSize, pGeo, satPts, trPos, trCol, trGeo, trails, cur, curVis, curEl, curAz, curLit, cand;
+  let pPos, pCol, pSize, pGeo, satPts, trPos, trCol, trGeo, trails, cur, curVis, curEl, curAz, curLit, curRng, cand;
   function buildBuffers() {
     if (satPts) { scene.remove(satPts); pGeo.dispose(); }
     if (trails) { scene.remove(trails); trGeo.dispose(); }
@@ -757,7 +762,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     trGeo.setAttribute('position', new THREE.BufferAttribute(trPos, 3)); trGeo.setAttribute('color', new THREE.BufferAttribute(trCol, 3));
     trails = new THREE.LineSegments(trGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     trails.renderOrder = 3; trails.frustumCulled = false; scene.add(trails);
-    cur = new Float32Array(N * 3); curVis = new Uint8Array(N); curEl = new Float32Array(N).fill(-90); curAz = new Float32Array(N); curLit = new Uint8Array(N); cand = new Uint8Array(N);
+    cur = new Float32Array(N * 3); curVis = new Uint8Array(N); curEl = new Float32Array(N).fill(-90); curAz = new Float32Array(N); curLit = new Uint8Array(N); curRng = new Float32Array(N).fill(1e9); cand = new Uint8Array(N);
     lastScan = -1e15;
   }
   const SELN = 81, selPos = new Float32Array(SELN * 6), selCol = new Float32Array(SELN * 6), selGeo = new THREE.BufferGeometry();
@@ -766,6 +771,34 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   selLine.renderOrder = 5; selLine.frustumCulled = false; selLine.visible = false; selGeo.setDrawRange(0, 0); scene.add(selLine);
   const ringTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.strokeStyle = '#ffc66b'; x.lineWidth = 4; x.beginPath(); x.arc(32, 32, 26, 0, Math.PI * 2); x.stroke(); return new THREE.CanvasTexture(c); })();
   const selRing = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTex, transparent: true, depthTest: false, depthWrite: false })); selRing.renderOrder = 11; selRing.visible = false; scene.add(selRing);
+  // closest satellite in view (sunlit, above the horizon, layer on): pulsing green halo. Prefers ones coming closer.
+  const haloTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.strokeStyle = '#7be3a8';
+    x.lineWidth = 7; x.beginPath(); x.arc(64, 64, 42, 0, Math.PI * 2); x.stroke(); x.globalAlpha = 0.4; x.lineWidth = 4; x.beginPath(); x.arc(64, 64, 57, 0, Math.PI * 2); x.stroke(); return new THREE.CanvasTexture(c); })();
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, transparent: true, depthTest: false, depthWrite: false })); halo.renderOrder = 12; halo.visible = false; scene.add(halo);
+  const CLOSE = { j: -1, rng: 0, appr: false, wall: 0 };
+  function findClosest() {
+    const t = simNow() + 10000 * Math.max(1, Math.min(speed, 6)), g = O.gmst(t), c = Math.cos(g), s = Math.sin(g);
+    let best = -1, score = Infinity, appr = false, rng = 0;
+    for (let j = 0; j < N; j++) {
+      if (!curVis[j] || !curLit[j] || curEl[j] < 0) continue;
+      const r = curRng[j], later = stateAt(OBJ[j], t, c, s, null, false).rng, a = later < r, sc = a ? r : r + 1e6;
+      if (sc < score) { score = sc; best = j; appr = a; rng = r; }
+    }
+    CLOSE.j = best; CLOSE.appr = appr; CLOSE.rng = rng;
+  }
+  function updateHalo() {
+    const now = performance.now();
+    if (now - CLOSE.wall > 500) { CLOSE.wall = now; if (N) findClosest(); }
+    const j = CLOSE.j;
+    if (j < 0 || !curVis[j] || !curLit[j] || curEl[j] < 0) { halo.visible = false; return; }
+    const x = cur[j * 3], y = cur[j * 3 + 1], z = cur[j * 3 + 2];
+    if (occluded(x, y, z)) { halo.visible = false; return; }
+    halo.position.set(x, y, z);
+    const base = mode === 'look' ? R * 0.07 * (camera.fov / 90) : camera.position.distanceTo(halo.position) * 0.06;
+    const p = reduce ? 1 : 0.5 + 0.5 * Math.sin(now / 1000 * Math.PI * 2 / 1.3);
+    const k = base * (reduce ? 1.6 : 1.4 + 0.45 * p);
+    halo.scale.set(k, k, 1); halo.material.opacity = reduce ? 0.9 : 0.3 + 0.7 * p; halo.visible = true;
+  }
 
   const COL = [[1.0, 0.56, 0.42], [1.0, 0.78, 0.42], [0.62, 0.84, 1.0]], SHADE = [0.33, 0.38, 0.48];
   const BASEA = [1.0, 1.0, 0.85], BASES = [9, 7.5, 4.2], TRA = [0.8, 0.7, 0.42];
@@ -779,7 +812,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     for (let j = 0; j < N; j++) { const st = stateAt(OBJ[j], t, sun.c, sun.s, sun.eci, true); writeState(j, st); cand[j] = st.el > -15 ? 1 : 0; }
     lastScan = t; lastScanWall = performance.now();
   }
-  function writeState(j, st) { toScene(st, V); cur[j * 3] = V.x; cur[j * 3 + 1] = V.y; cur[j * 3 + 2] = V.z; curEl[j] = st.el; curAz[j] = st.az; curLit[j] = st.lit >= 0.5 ? 1 : 0; }
+  function writeState(j, st) { toScene(st, V); cur[j * 3] = V.x; cur[j * 3 + 1] = V.y; cur[j * 3 + 2] = V.z; curEl[j] = st.el; curAz[j] = st.az; curRng[j] = st.rng; curLit[j] = st.lit >= 0.5 ? 1 : 0; }
 
   let rr = 0;
   function update() {
@@ -867,6 +900,8 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
       $('nowline').innerHTML = 'Visible: ' + parts.join(' · ');
     } else $('nowline').textContent = 'Too bright to see satellites';
     $('livetxt').textContent = live ? 'Live' : 'Shifted';
+    const cj = CLOSE.j;
+    $('closeline').innerHTML = cj >= 0 ? '<i></i>Closest: ' + esc(OBJ[cj].name) + ' · ' + Math.round(CLOSE.rng).toLocaleString('en-GB') + ' km · ' + (CLOSE.appr ? 'coming closer' : 'moving away') : '';
     const ti = $('time'); if (document.activeElement !== ti) ti.value = Math.max(-60, Math.min(720, off));
     // banner
     const msgs = [];
@@ -1383,7 +1418,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   new ResizeObserver(resize).observe(stage);
   function frame() {
     if (simNow() > Date.now() + 12 * 3600000 || simNow() < Date.now() - 2 * 3600000) goLive();
-    update(); placeCamera(); renderer.render(scene, camera); updateTag(); updateHeading();
+    update(); placeCamera(); renderer.render(scene, camera); updateTag(); updateHalo(); updateHeading();
     requestAnimationFrame(frame);
   }
   const relabel = () => labels.forEach(drawLabel);
