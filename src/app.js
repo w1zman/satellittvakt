@@ -449,7 +449,7 @@
       window.addEventListener(ORIENT_EV, onOrient);
       clearTimeout(compass.timer);
       compass.timer = setTimeout(() => { if (compass.on && !compass.have) { setCompass(false); lookMsg('No compass found on this device.'); } }, 3000);
-      lookMsg('Hold your phone up and point it at the sky.');
+      lookMsg('Hold your phone flat, screen up, and look down at it. The top of the phone points the way you face.');
     } else {
       compass.on = false; compass.have = false; clearTimeout(compass.timer); window.removeEventListener(ORIENT_EV, onOrient);
     }
@@ -469,13 +469,18 @@
   const cam = { dome: { th: 20 * D2R, pol: 60 * D2R, dist: 30 }, look: { az: 320 * D2R, pitch: 32 * D2R, fov: 95 }, globe: { th: Math.atan2(narv.x, narv.z), pol: Math.acos(narv.y) + 32 * D2R, dist: 3.4 } };
   function placeCamera() {
     const w = stage.clientWidth, h = stage.clientHeight, asp = w / Math.max(1, h); camera.aspect = asp;
+    // compass: phone held flat, screen up, works like a mirror lying on the ground. The world is mirrored in the
+    // horizontal plane and the camera looks out of the back of the phone, so the screen shows the sky above with
+    // east/west matching the ground (as in the "Sky" view). Sprites stay readable since their scale is unsigned.
+    const mir = mode === 'look' && compass.on && compass.have;
+    if (scene.scale.y !== (mir ? -1 : 1)) scene.scale.y = mir ? -1 : 1;
     if (mode === 'look') {
       const hf = cam.look.fov * D2R; camera.fov = Math.min(150, 2 * Math.atan(Math.tan(hf / 2) / asp) / D2R);
-      camera.position.set(0, 0.25, 0);
-      if (compass.on && compass.have) {
+      camera.position.set(0, mir ? -0.25 : 0.25, 0);
+      if (mir) {
         compass.q.slerp(compass.tgt, 0.25); camera.quaternion.copy(compass.q);
-        const d = new THREE.Vector3(0, 0, -1).applyQuaternion(compass.q);
-        cam.look.az = Math.atan2(d.x, -d.z); cam.look.pitch = Math.max(-0.08, Math.min(1.56, Math.asin(Math.max(-1, Math.min(1, d.y)))));
+        const d = new THREE.Vector3(0, 0, -1).applyQuaternion(compass.q); // the sky seen is this direction mirrored: (x, −y, z)
+        cam.look.az = Math.atan2(d.x, -d.z); cam.look.pitch = Math.max(-0.08, Math.min(1.56, Math.asin(Math.max(-1, Math.min(1, -d.y)))));
         camera.near = 0.05; camera.updateProjectionMatrix(); return;
       }
       const c = cam.look, d = new THREE.Vector3(Math.cos(c.pitch) * Math.sin(c.az), Math.sin(c.pitch), -Math.cos(c.pitch) * Math.cos(c.az));
@@ -510,7 +515,7 @@
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('wheel', e => { e.preventDefault(); zoom(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
   const PJ = new THREE.Vector3();
-  function project(x, y, z) { PJ.set(x, y, z).project(camera); const r = canvas.getBoundingClientRect(); return { x: (PJ.x + 1) / 2 * r.width, y: (1 - PJ.y) / 2 * r.height, z: PJ.z }; }
+  function project(x, y, z) { PJ.set(x, y * scene.scale.y, z).project(camera); const r = canvas.getBoundingClientRect(); return { x: (PJ.x + 1) / 2 * r.width, y: (1 - PJ.y) / 2 * r.height, z: PJ.z }; }
   function occluded(x, y, z) { if (mode !== 'globe') return false; const o = camera.position, d = new THREE.Vector3(x - o.x, y - o.y, z - o.z), L = d.length(); d.divideScalar(L);
     const b = o.dot(d), c = o.lengthSq() - 1, disc = b * b - c; if (disc < 0) return false; const t1 = -b - Math.sqrt(disc); return t1 > 0 && t1 < L; }
   function pick(cx, cy) {
