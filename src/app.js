@@ -809,6 +809,28 @@
   window.addEventListener('hashchange', () => { const h = location.hash.replace('#', '').toLowerCase(); if (PLACES[h]) setPlace(h); });
   applyPlaceText();
 
+  // ---------- full screen (native where supported, CSS overlay otherwise, e.g. iPhone) ----------
+  const fsBtn = $('fsbtn');
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  function setFull(on) {
+    stage.classList.toggle('full', on); document.documentElement.classList.toggle('fs-lock', on);
+    fsBtn.setAttribute('aria-pressed', String(on)); fsBtn.setAttribute('aria-label', on ? 'Close full screen' : 'Full screen'); fsBtn.title = on ? 'Close full screen' : 'Full screen';
+    resize();
+  }
+  function openFull() {
+    setFull(true);
+    const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    if (req) { try { const r = req.call(stage); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+  }
+  function closeFull() {
+    if (fsEl()) { const ex = document.exitFullscreen || document.webkitExitFullscreen; try { const r = ex.call(document); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+    setFull(false);
+  }
+  fsBtn.addEventListener('click', () => stage.classList.contains('full') ? closeFull() : openFull());
+  const onFsChange = () => { if (!fsEl() && stage.classList.contains('full')) setFull(false); };
+  document.addEventListener('fullscreenchange', onFsChange); document.addEventListener('webkitfullscreenchange', onFsChange);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && stage.classList.contains('full') && !fsEl()) closeFull(); });
+
   // ---------- loop ----------
   function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); uPR.value = renderer.getPixelRatio(); placeCamera(); }
   new ResizeObserver(resize).observe(stage);

@@ -64,8 +64,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--sun); outli
 .tag { position: absolute; left: 0; top: 0; pointer-events: none; background: rgba(6,10,19,.88); border: 1px solid var(--line); border-left: 2px solid var(--sun); border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.35; max-width: 230px; }
 .tag b { font-weight: 600; display: block; }
 .tag span { font-family: var(--f-data); font-size: 11px; color: var(--mist); }
-.banner { position: absolute; left: 10px; right: 10px; bottom: 10px; font-size: 12px; color: var(--frost); pointer-events: none; display: flex; justify-content: flex-start; }
+.banner { position: absolute; left: 10px; right: 58px; bottom: 10px; font-size: 12px; color: var(--frost); pointer-events: none; display: flex; justify-content: flex-start; }
 .banner span { background: rgba(6,10,19,.72); padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); max-width: 100%; }
+.fsbtn { position: absolute; right: 10px; bottom: 10px; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; color: var(--frost); background: rgba(6,10,19,.72); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; backdrop-filter: blur(6px); z-index: 2; }
+.fsbtn:hover { border-color: var(--mist); }
+.fsbtn svg { width: 18px; height: 18px; display: block; }
+.fsbtn .i-close { display: none; }
+.stage.full .fsbtn .i-open { display: none; }
+.stage.full .fsbtn .i-close { display: block; }
+.stage.full { position: fixed; inset: 0; z-index: 100; width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; min-height: 0; aspect-ratio: auto; border: 0; border-radius: 0; }
+.stage.full .fsbtn { right: max(12px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: 44px; height: 44px; }
+.stage.full .modes { top: max(10px, env(safe-area-inset-top, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); }
+.stage.full .readout { top: max(10px, env(safe-area-inset-top, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); }
+.stage.full .banner { bottom: max(12px, env(safe-area-inset-bottom, 0px)); right: 66px; }
+html.fs-lock, html.fs-lock body { overflow: hidden; }
 .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mist); font-size: 14px; text-align: center; padding: 20px; }
 
 .timeline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
@@ -193,6 +205,10 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         </div>
         <div class="tag" id="tag" hidden></div>
         <div class="banner" id="banner" hidden><span id="bannertxt"></span></div>
+        <button type="button" class="fsbtn" id="fsbtn" aria-label="Full screen" title="Full screen" aria-pressed="false">
+          <svg class="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          <svg class="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
 
       <div class="timeline">
