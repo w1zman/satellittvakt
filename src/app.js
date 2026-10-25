@@ -752,7 +752,19 @@
   const aurGlobeMat = new THREE.ShaderMaterial({ uniforms: aurUni(400, 0.004),vertexShader: AUR_VS, fragmentShader: AUR_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   aurGlobeMat.uniforms.uMax.value = 40; aurGlobeMat.uniforms.uPersp.value = 1; // globe: each glow sized by its own distance, so it stays smooth close up
   const maxPoint = (() => { try { const gl = renderer.getContext(); return gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1] || 64; } catch (e) { return 64; } })();
-  let aurDome = null, aurGlobe = null;
+  let aurDome = null, aurGlobe = null, aurShell = null;
+  // close-up globe: a smooth glowing shell 110 km up, drawn from the same forecast grid, with the same waves
+  const aurShellMat = new THREE.ShaderMaterial({
+    uniforms: { uTex: { value: null }, uTime: aurTime, uFade: { value: 0 } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: ['uniform sampler2D uTex; uniform float uTime; uniform float uFade; varying vec3 vP;',
+      'void main(){ vec3 n = normalize(vP); float lat = degrees(asin(clamp(n.y, -1.0, 1.0))); float lo = degrees(atan(-n.z, n.x)); if (lo < 0.0) lo += 360.0;',
+      ' float p = texture2D(uTex, vec2((lo + 0.5) / 360.0, (lat + 90.5) / 181.0)).r * 100.0;',
+      ' float a = min(1.0, p / 22.0) * smoothstep(2.0, 5.0, p) * smoothstep(33.0, 37.0, abs(lat));',
+      ' float w = sin(lo * 0.35 + uTime * 0.6 + sin(lat * 0.9 + uTime * 0.25) * 1.6);',
+      ' float k = (0.6 + 0.4 * w) * (0.9 + 0.1 * sin(lo * 0.7 - uTime * 0.9)) * 1.85;',
+      ' float al = a * k * 0.62 * uFade; if (al < 0.003) discard; gl_FragColor = vec4(vec3(0.36, 1.0, 0.62) * al, al); }'].join('\n'),
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   const HEIGHTS = [100, 118, 140, 168, 205, 250], HF = [0.5, 0.62, 0.55, 0.36, 0.2, 0.11];
   const HCOL = [[0.30, 1.0, 0.58], [0.32, 1.0, 0.6], [0.36, 0.98, 0.62], [0.45, 0.9, 0.62], [0.95, 0.38, 0.55], [1.0, 0.3, 0.5]];
   function gridAt(lon, lat) {
@@ -806,6 +818,11 @@
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P2), 3)); geo.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array(C2), 4)); geo.setAttribute('aAng', new THREE.BufferAttribute(new Float32Array(A2), 1));
     geo.setAttribute('aGeo', new THREE.BufferAttribute(new Float32Array(G2), 3));
     aurGlobe = new THREE.Points(geo, aurGlobeMat); aurGlobe.renderOrder = 3; aurGlobe.frustumCulled = false; globeG.add(aurGlobe);
+    const td = new Uint8Array(360 * 181 * 4);
+    for (let lo = 0; lo < 360; lo++) for (let y = 0; y <= 180; y++) { const i = (y * 360 + lo) * 4; td[i] = Math.min(255, Math.round(g[lo * 181 + y] * 2.55)); td[i + 3] = 255; }
+    const tex = new THREE.DataTexture(td, 360, 181, THREE.RGBAFormat); tex.magFilter = tex.minFilter = THREE.LinearFilter; tex.wrapS = THREE.RepeatWrapping; tex.needsUpdate = true;
+    if (aurShellMat.uniforms.uTex.value) aurShellMat.uniforms.uTex.value.dispose(); aurShellMat.uniforms.uTex.value = tex;
+    if (!aurShell) { aurShell = new THREE.Mesh(new THREE.SphereGeometry(1 + 110 / RE, 192, 128), aurShellMat); aurShell.renderOrder = 3; globeG.add(aurShell); }
   }
   function updateAurora(t, sun) {
     const nearNow = Math.abs(t - Date.now()) < 90 * 60000, fresh = AUR.ovObs && Date.now() - AUR.ovObs < 3 * 3600000;
@@ -815,7 +832,9 @@
     if (!reduce) aurTime.value = performance.now() / 1000;
     if (aurDome) { aurDome.visible = on && mode !== 'globe' && dark > 0; aurDomeMat.uniforms.uFade.value = dark;
       aurDomeMat.uniforms.uPx.value = mode === 'look' ? pxScreen : pxScreen * R / Math.max(1, camera.position.length()); }
-    if (aurGlobe) { aurGlobe.visible = on && mode === 'globe'; aurGlobeMat.uniforms.uPx.value = pxScreen;
+    const close = Math.max(0, Math.min(1, (0.45 - cam.globe.dist) / 0.25)); // 0 = glow points, 1 = smooth shell
+    if (aurShell) { aurShellMat.uniforms.uFade.value = close; aurShell.visible = on && mode === 'globe' && close > 0; }
+    if (aurGlobe) { aurGlobe.visible = on && mode === 'globe' && close < 1; aurGlobeMat.uniforms.uFade.value = 1 - close; aurGlobeMat.uniforms.uPx.value = pxScreen;
       aurGlobeMat.uniforms.uMax.value = Math.min(maxPoint, 40 * Math.max(1, 1.4 / cam.globe.dist)); }
   }
 
