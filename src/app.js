@@ -129,7 +129,7 @@
     x.font = f; x.fillStyle = o.color; x.textBaseline = 'middle'; x.fillText(text, o.px * 0.25, c.height / 2);
     if (sp.material.map) sp.material.map.dispose();
     const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
-    sp.material.map = tex; sp.material.needsUpdate = true; sp.scale.set(o.h * c.width / c.height, o.h, 1);
+    sp.material.map = tex; sp.material.needsUpdate = true; const k = sp.userData.k || 1; sp.userData.sx = o.h * c.width / c.height; sp.scale.set(sp.userData.sx * k, o.h * k, 1);
   }
   const DISPLAY = '"Big Shoulders Display", "Arial Narrow", sans-serif';
   [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, az]) => {
@@ -217,12 +217,21 @@
     globeG.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0x8d9cb5, 0.13)));
     const ac = []; for (let lo = 0; lo <= 360; lo += 2) ac.push(geoV(66.56, lo, 1.003));
     const acl = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ac), new THREE.LineDashedMaterial({ color: 0x9fd6ff, transparent: true, opacity: 0.45, dashSize: 0.02, gapSize: 0.015 })); acl.computeLineDistances(); globeG.add(acl); }
+  // globe labels shrink towards their spot on the ground as you zoom in, so they stay readable close up
+  let globeLabelK = -1;
+  function pinLabel(l, surf) { l.userData.surf = surf; l.userData.off = l.position.clone().sub(surf); }
+  function scaleGlobeLabels(k) {
+    if (Math.abs(k - globeLabelK) < 0.002) return; globeLabelK = k;
+    const each = l => { const u = l.userData; if (!u || !u.surf) return; u.k = k;
+      l.position.copy(u.off).multiplyScalar(k).add(u.surf); l.scale.set(u.sx * k, u.o.h * k, 1); };
+    globeG.children.forEach(each); if (placeMark) placeMark.children.forEach(each);
+  }
   const CITIES = [['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
     ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['North Pole', 90, 0]];
   { const cp = new Float32Array(CITIES.length * 3), cs = new Float32Array(CITIES.length), cc = new Float32Array(CITIES.length * 4);
     CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = 3.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
       const l = makeLabel(c[0], { px: 48, h: 0.022, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
-      l.position.copy(geoV(c[1], c[2], 1.014)); l.position.y += 0.0055; l.userData.city = c[0]; globeG.add(l); });
+      l.position.copy(geoV(c[1], c[2], 1.014)); l.position.y += 0.0055; l.userData.city = c[0]; pinLabel(l, geoV(c[1], c[2], 1)); globeG.add(l); });
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(cp, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(cs, 1)); g.setAttribute('aCol', new THREE.BufferAttribute(cc, 4));
     const m = ptMat(); m.depthTest = true; globeG.add(new THREE.Points(g, m)); }
   // world map: Natural Earth 1:50m via world-atlas, loaded the first time the globe is shown
@@ -276,7 +285,7 @@
     const pg = new THREE.BufferGeometry(), v = geoV(LAT, LON, 1.005);
     pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([v.x, v.y, v.z]), 3)); pg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array([7]), 1)); pg.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array([1, 0.78, 0.42, 1]), 4));
     const pm = ptMat(); pm.depthTest = true; placeMark.add(new THREE.Points(pg, pm));
-    const l = makeLabel(placeLabel(PLACE), { px: 48, h: 0.03, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.014)); l.position.y += 0.0067; placeMark.add(l);
+    const l = makeLabel(placeLabel(PLACE), { px: 48, h: 0.03, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.014)); l.position.y += 0.0067; pinLabel(l, geoV(LAT, LON, 1)); placeMark.add(l); globeLabelK = -1;
   }
   buildPlaceMarker();
   const shadow = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 5, 64, 1, true), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
@@ -497,6 +506,7 @@
   // ---------- camera ----------
   let narv = geoV(LAT, LON, 1);
   const cam = { dome: { th: 20 * D2R, pol: 60 * D2R, dist: 30 }, look: { az: 320 * D2R, pitch: 32 * D2R, fov: 95 }, globe: { th: Math.atan2(narv.x, narv.z), pol: Math.acos(narv.y) + 32 * D2R, dist: 3.4 } };
+  const GLOBE_MIN = 0.1; // closest globe zoom, in Earth radii from the place (~640 km)
   function placeCamera() {
     const w = stage.clientWidth, h = stage.clientHeight, asp = w / Math.max(1, h); camera.aspect = asp;
     // compass: phone held flat, screen up, works like a mirror lying on the ground. The world is mirrored in the
@@ -517,9 +527,15 @@
       camera.up.set(0, 1, 0); camera.lookAt(d.add(camera.position));
     } else {
       camera.fov = asp < 1 ? 2 * Math.atan(Math.tan(24 * D2R) / asp) / D2R : 48;
-      const c = cam[mode], tgt = mode === 'dome' ? new THREE.Vector3(0, 2.6, 0) : narv.clone().multiplyScalar(0.55);
+      const c = cam[mode]; let tgt;
+      if (mode === 'dome') tgt = new THREE.Vector3(0, 2.6, 0);
+      else { // zoomed out: orbit a point inside the Earth; zoomed in: orbit the place itself, down to ~600 km up
+        const t = Math.max(0, Math.min(1, (1.4 - c.dist) / (1.4 - GLOBE_MIN))), e = t * t * (3 - 2 * t);
+        tgt = narv.clone().multiplyScalar(0.55 + 0.45 * e); }
       camera.position.set(tgt.x + c.dist * Math.sin(c.pol) * Math.sin(c.th), tgt.y + c.dist * Math.cos(c.pol), tgt.z + c.dist * Math.sin(c.pol) * Math.cos(c.th));
+      if (mode === 'globe' && camera.position.length() < 1.012) camera.position.setLength(1.012);
       camera.up.set(0, 1, 0); camera.lookAt(tgt);
+      if (mode === 'globe') scaleGlobeLabels(Math.max(0.08, Math.min(1, (camera.position.length() - 1) / 0.95)));
     }
     camera.near = mode === 'globe' ? 0.01 : 0.05; camera.updateProjectionMatrix();
   }
@@ -531,7 +547,7 @@
   function zoom(f) {
     if (mode === 'look') cam.look.fov = Math.max(35, Math.min(120, cam.look.fov * f));
     else if (mode === 'dome') cam.dome.dist = Math.max(11, Math.min(70, cam.dome.dist * f));
-    else cam.globe.dist = Math.max(1.4, Math.min(12, cam.globe.dist * f));
+    else cam.globe.dist = Math.max(GLOBE_MIN, Math.min(12, cam.globe.dist * f));
   }
   const ptrs = new Map(); let down = null, pinch = null;
   const pdist = () => { const v = [...ptrs.values()]; return Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y); };
