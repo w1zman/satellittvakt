@@ -3,6 +3,8 @@
   const $ = id => document.getElementById(id);
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const PLACES = { narvik: { key: 'narvik', name: 'Narvik', lat: 68.4385, lon: 17.4273, h: 0.02 }, tromso: { key: 'tromso', name: 'Tromsø', lat: 69.6496, lon: 18.9560, h: 0.02 } };
+  try { const m = JSON.parse(localStorage.getItem('sv-me') || 'null'); if (m && isFinite(m.lat) && isFinite(m.lon) && Math.abs(m.lat) <= 90) PLACES.me = { key: 'me', name: m.name || 'your location', named: !!m.named, lat: +m.lat, lon: +m.lon, h: isFinite(m.h) ? +m.h : 0.02 }; } catch (e) {}
+  const placeLabel = p => p.key === 'me' && !p.named ? 'You are here' : p.name;
   let PLACE, LAT, LON, OBS, sLa, cLa, sLo, cLo;
   function setObserver(key) {
     PLACE = PLACES[key] || PLACES.narvik; LAT = PLACE.lat; LON = PLACE.lon; OBS = O.geodeticToEcef(LAT, LON, PLACE.h);
@@ -135,7 +137,7 @@
     s.userData.compass = az; domeG.add(s);
   });
   [10, 30, 60].forEach(el => { const s = makeLabel(el + '°', { px: 48, h: 0.5, color: '#8d9cb5', family: '"JetBrains Mono", monospace', weight: '400' }); s.position.copy(toDome(0, -Math.cos(el * D2R), Math.sin(el * D2R), R + 0.05)).add(new THREE.Vector3(0.45, 0.2, 0)); domeG.add(s); });
-  const narvikLbl = makeLabel(PLACE.name, { px: 56, h: 0.55, color: '#ffc66b' }); narvikLbl.position.set(0, 0.7, 0); domeG.add(narvikLbl);
+  const narvikLbl = makeLabel(placeLabel(PLACE), { px: 56, h: 0.55, color: '#ffc66b' }); narvikLbl.position.set(0, 0.7, 0); domeG.add(narvikLbl);
 
   // stars (J2000 RA/Dec deg, magnitude, labelled)
   const STARS = [
@@ -274,7 +276,7 @@
     const pg = new THREE.BufferGeometry(), v = geoV(LAT, LON, 1.005);
     pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([v.x, v.y, v.z]), 3)); pg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array([7]), 1)); pg.setAttribute('aCol', new THREE.BufferAttribute(new Float32Array([1, 0.78, 0.42, 1]), 4));
     const pm = ptMat(); pm.depthTest = true; placeMark.add(new THREE.Points(pg, pm));
-    const l = makeLabel(PLACE.name, { px: 48, h: 0.03, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.014)); l.position.y += 0.0067; placeMark.add(l);
+    const l = makeLabel(placeLabel(PLACE), { px: 48, h: 0.03, color: '#ffc66b', depthTest: true, weight: '600' }); l.position.copy(geoV(LAT, LON, 1.014)); l.position.y += 0.0067; placeMark.add(l);
   }
   buildPlaceMarker();
   const shadow = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 5, 64, 1, true), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
@@ -413,6 +415,55 @@
     $('banner').hidden = !msgs.length; $('bannertxt').textContent = msgs.join(' ');
   }
 
+  // ---------- phone compass for "Look up" (device orientation → camera) ----------
+  const compass = { on: false, have: false, q: new THREE.Quaternion(), tgt: new THREE.Quaternion(), off: null, rel: false, timer: 0 };
+  const cEu = new THREE.Euler(), cQ1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)), cQ0 = new THREE.Quaternion(), ZEE = new THREE.Vector3(0, 0, 1);
+  const ORIENT_EV = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+  const canCompass = 'DeviceOrientationEvent' in window && !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  let lookMsgT = 0;
+  function lookMsg(s) { $('lookmsg').textContent = s; clearTimeout(lookMsgT); if (s) lookMsgT = setTimeout(() => { $('lookmsg').textContent = ''; }, 6000); }
+  function onOrient(e) {
+    if (e.alpha == null || e.beta == null || e.gamma == null) return;
+    let alpha = e.alpha;
+    if (typeof e.webkitCompassHeading === 'number' && isFinite(e.webkitCompassHeading) && e.webkitCompassHeading >= 0) {
+      // iOS: alpha is relative; align it to north with a slowly smoothed offset from the compass heading
+      const want = ((360 - e.webkitCompassHeading - alpha) % 360 + 360) % 360;
+      if (compass.off == null) compass.off = want; else { const d = ((want - compass.off + 540) % 360) - 180; compass.off = (compass.off + d * 0.04 + 360) % 360; }
+      alpha += compass.off;
+    } else if (ORIENT_EV === 'deviceorientation' && !e.absolute && !compass.rel) { compass.rel = true; lookMsg('This phone does not report north, so directions may be off.'); }
+    const so = ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * D2R;
+    cEu.set(e.beta * D2R, alpha * D2R, -e.gamma * D2R, 'YXZ');
+    compass.tgt.setFromEuler(cEu).multiply(cQ1).multiply(cQ0.setFromAxisAngle(ZEE, -so));
+    if (!compass.have) compass.q.copy(compass.tgt);
+    compass.have = true;
+  }
+  async function setCompass(on) {
+    if (on) {
+      const DOE = window.DeviceOrientationEvent;
+      if (DOE && typeof DOE.requestPermission === 'function') {
+        let r = 'denied'; try { r = await DOE.requestPermission(); } catch (e) {}
+        if (r !== 'granted') { lookMsg('Motion and compass access was denied.'); return; }
+      }
+      if (mode !== 'look') setMode('look');
+      Object.assign(compass, { on: true, have: false, off: null, rel: false });
+      window.addEventListener(ORIENT_EV, onOrient);
+      clearTimeout(compass.timer);
+      compass.timer = setTimeout(() => { if (compass.on && !compass.have) { setCompass(false); lookMsg('No compass found on this device.'); } }, 3000);
+      lookMsg('Hold your phone up and point it at the sky.');
+    } else {
+      compass.on = false; compass.have = false; clearTimeout(compass.timer); window.removeEventListener(ORIENT_EV, onOrient);
+    }
+    $('cmpbtn').setAttribute('aria-pressed', String(compass.on));
+  }
+  $('cmpbtn').hidden = !canCompass;
+  $('cmpbtn').addEventListener('click', () => setCompass(!compass.on));
+  let lastHeading = '';
+  function updateHeading() {
+    if (mode !== 'look') return;
+    const az = ((cam.look.az / D2R) % 360 + 360) % 360, s = 'Facing ' + dirName(az) + ' ' + Math.round(az) % 360 + '° · ' + Math.round(cam.look.pitch / D2R) + '° up';
+    if (s !== lastHeading) { lastHeading = s; $('heading').textContent = s; }
+  }
+
   // ---------- camera ----------
   let narv = geoV(LAT, LON, 1);
   const cam = { dome: { th: 20 * D2R, pol: 60 * D2R, dist: 30 }, look: { az: 320 * D2R, pitch: 32 * D2R, fov: 95 }, globe: { th: Math.atan2(narv.x, narv.z), pol: Math.acos(narv.y) + 32 * D2R, dist: 3.4 } };
@@ -421,6 +472,12 @@
     if (mode === 'look') {
       const hf = cam.look.fov * D2R; camera.fov = Math.min(150, 2 * Math.atan(Math.tan(hf / 2) / asp) / D2R);
       camera.position.set(0, 0.25, 0);
+      if (compass.on && compass.have) {
+        compass.q.slerp(compass.tgt, 0.25); camera.quaternion.copy(compass.q);
+        const d = new THREE.Vector3(0, 0, -1).applyQuaternion(compass.q);
+        cam.look.az = Math.atan2(d.x, -d.z); cam.look.pitch = Math.max(-0.08, Math.min(1.56, Math.asin(Math.max(-1, Math.min(1, d.y)))));
+        camera.near = 0.05; camera.updateProjectionMatrix(); return;
+      }
       const c = cam.look, d = new THREE.Vector3(Math.cos(c.pitch) * Math.sin(c.az), Math.sin(c.pitch), -Math.cos(c.pitch) * Math.cos(c.az));
       camera.up.set(0, 1, 0); camera.lookAt(d.add(camera.position));
     } else {
@@ -433,7 +490,7 @@
   }
   function rotate(dx, dy) {
     const h = stage.clientHeight || 400;
-    if (mode === 'look') { const k = camera.fov * D2R / h; cam.look.az -= dx * k; cam.look.pitch = Math.max(-0.08, Math.min(1.56, cam.look.pitch + dy * k)); }
+    if (mode === 'look') { if (compass.on) return; const k = camera.fov * D2R / h; cam.look.az -= dx * k; cam.look.pitch = Math.max(-0.08, Math.min(1.56, cam.look.pitch + dy * k)); }
     else { const c = cam[mode]; c.th -= dx * 0.006; c.pol = Math.max(mode === 'globe' ? 0.05 : 0.12, Math.min(mode === 'globe' ? Math.PI - 0.05 : 1.55, c.pol - dy * 0.006)); }
   }
   function zoom(f) {
@@ -484,7 +541,7 @@
     tag.hidden = false;
     const r = stage.getBoundingClientRect(), tw = tag.offsetWidth, th = tag.offsetHeight; let left = p.x + 14, top = p.y - th / 2;
     if (left + tw > r.width - 8) left = p.x - tw - 14;
-    top = Math.max(56, Math.min(r.height - th - 44, top)); left = Math.max(8, left);
+    top = Math.max(56, Math.min(r.height - th - (mode === 'look' ? 100 : 44), top)); left = Math.max(8, left);
     tag.style.transform = 'translate(' + Math.round(left) + 'px,' + Math.round(top) + 'px)';
   }
 
@@ -550,8 +607,8 @@
         if (k - k0 > 600) { k0 = k; await sleep(); if (gen !== predGen) return; }
       }
       if (first) dd.textContent = 'Next visible pass ' + dateStr(first.t) + ' at ' + hm(first.t) + ', towards ' + dirName(first.az) + '.';
-      else if (maxAny < 0) dd.textContent = 'Never rises above the horizon as seen from ' + PLACE.name + '. Its orbit does not reach far enough north.';
-      else if (maxAny < 10) dd.textContent = 'No visible passes in the next ' + DAYS + ' days. From ' + PLACE.name + ' it gets no higher than ' + num(maxAny) + '° above the southern horizon, because its orbit does not reach far enough north.';
+      else if (maxAny < 0) dd.textContent = 'Never rises above the horizon as seen from ' + PLACE.name + '. Its orbit does not reach far enough ' + (LAT >= 0 ? 'north' : 'south') + '.';
+      else if (maxAny < 10) dd.textContent = 'No visible passes in the next ' + DAYS + ' days. From ' + PLACE.name + ' it gets no higher than ' + num(maxAny) + '° above the ' + (LAT >= 0 ? 'southern' : 'northern') + ' horizon, because its orbit does not reach far enough ' + (LAT >= 0 ? 'north' : 'south') + '.';
       else dd.textContent = 'No visible passes in the next ' + DAYS + ' days. When it passes over ' + PLACE.name + ', it is either too bright or it is in Earth’s shadow.';
     }
   }
@@ -578,7 +635,8 @@
     const nb = OBJ.filter(o => o.kind !== 2).length, ns = OBJ.filter(o => o.kind === 2).length;
     add('Count', nb + ' bright objects and space stations' + (ns ? ' · ' + ns.toLocaleString('en-GB') + ' Starlink' : ''));
     if (starlinkState === 'ok') add('Selection', slInfo && slInfo.format === 'polar'
-      ? 'Starlink in orbits with 70° and 97° inclination, the ones that pass high over ' + PLACE.name + '. Starlink at 43° and 53° inclination never gets more than a few degrees above the southern horizon from here.'
+      ? (LAT >= 62 ? 'Starlink in orbits with 70° and 97° inclination, the ones that pass high over ' + PLACE.name + '. Starlink at 43° and 53° inclination never gets more than a few degrees above the southern horizon from here.'
+        : 'Only Starlink in orbits with 70° and 97° inclination is loaded (the ones that pass high over northern Norway), so many of the Starlink satellites over ' + PLACE.name + ' are not shown.')
       : 'Starlink with more than 50° inclination. The ones at 43° inclination never rise above the horizon in ' + PLACE.name + '.');
     else if (starlinkState === 'loading') add('Selection', 'Loading Starlink …');
     else if (starlinkState === 'old') add('Selection', 'The Starlink data is too old to give correct positions, so the layer is off until the next update.');
@@ -602,6 +660,7 @@
     domeG.children.forEach(c => { if (c.userData.compass !== undefined) { const az = c.userData.compass * D2R; if (m === 'look') c.position.copy(toDome(Math.sin(az), Math.cos(az), 0.05, R * 0.9)); else c.position.copy(toDome(Math.sin(az), Math.cos(az), 0, R + 1.4)).setY(0.5); }
       if (c.userData.domeOnly) c.visible = m === 'dome'; });
     narvikLbl.visible = m === 'dome'; force = true;
+    $('lookbar').hidden = m !== 'look'; if (m !== 'look' && compass.on) setCompass(false);
   }
   Object.entries(modeBtns).forEach(([k, b]) => b.addEventListener('click', () => setMode(k)));
   $('live').addEventListener('click', goLive);
@@ -655,7 +714,8 @@
     if (aurGlobe) { globeG.remove(aurGlobe); aurGlobe.geometry.dispose(); }
     // dome: emission columns within sight of the observer
     const P = [], C = [], A = [], GE = []; let pSky = 0, skyAz = null;
-    for (let lat = 52; lat <= 86; lat++) for (let lo = -45; lo <= 80; lo++) {
+    const span = Math.min(180, 23 / Math.max(0.12, Math.cos(LAT * D2R))), la0 = Math.max(-90, Math.round(LAT) - 18), la1 = Math.min(90, Math.round(LAT) + 18);
+    for (let lat = la0; lat <= la1; lat++) for (let lo = Math.round(LON - span); lo <= Math.round(LON + span); lo++) {
       const p = g[(((lo % 360) + 360) % 360) * 181 + lat + 90]; if (p < 3) continue;
       for (let h = 0; h < HEIGHTS.length; h++) {
         const e = O.geodeticToEcef(lat, lo, HEIGHTS[h]), v = enu(e[0], e[1], e[2]), L = Math.hypot(v[0], v[1], v[2]), el = Math.asin(v[2] / L) / D2R;
@@ -786,17 +846,17 @@
   // ---------- place switch ----------
   function applyPlaceText() {
     document.querySelectorAll('.pname').forEach(e => { e.textContent = PLACE.name; });
-    $('pcoords').textContent = num(LAT, 2) + '° N ' + num(LON, 2) + '° E';
-    document.title = 'Satellite Watch ' + PLACE.name;
+    $('pcoords').textContent = num(Math.abs(LAT), 2) + '° ' + (LAT >= 0 ? 'N' : 'S') + ' ' + num(Math.abs(LON), 2) + '° ' + (LON >= 0 ? 'E' : 'W');
+    document.title = PLACE.key === 'me' && !PLACE.named ? 'Satellite Watch' : 'Satellite Watch ' + PLACE.name;
     $('cv').setAttribute('aria-label', '3D view of satellites over ' + PLACE.name);
     document.querySelectorAll('.place button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === PLACE.key)));
   }
-  function setPlace(key) {
-    if (!PLACES[key] || key === PLACE.key) return;
+  function setPlace(key, again) {
+    if (!PLACES[key] || (key === PLACE.key && !again)) return;
     setObserver(key);
     try { localStorage.setItem('sv-place', key); } catch (e) {}
     try { history.replaceState(null, '', key === 'narvik' ? location.pathname + location.search : '#' + key); } catch (e) {}
-    narvikLbl.userData.text = PLACE.name; drawLabel(narvikLbl);
+    narvikLbl.userData.text = placeLabel(PLACE); drawLabel(narvikLbl);
     buildPlaceMarker(); narv = geoV(LAT, LON, 1);
     cam.globe.th = Math.atan2(narv.x, narv.z); cam.globe.pol = Math.acos(narv.y) + 32 * D2R;
     select(-1); force = true; lastScan = -1e15;
@@ -805,7 +865,28 @@
     predGen++; $('rows').innerHTML = '<div class="empty">Calculating passes …</div>'; PASSES = [];
     predictPasses().then(predictStations);
   }
-  document.querySelectorAll('.place button').forEach(b => b.addEventListener('click', () => setPlace(b.dataset.place)));
+  // my location: browser geolocation (rounded to ~100 m), named with OpenStreetMap Nominatim; kept in this browser only
+  const geoBtn = document.querySelector('.place button[data-place="me"]'), geoMsg = $('geomsg');
+  async function placeName(lat, lon) {
+    try { const j = await getJSON('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat=' + lat + '&lon=' + lon); const a = j.address || {};
+      return a.city || a.town || a.village || a.municipality || a.hamlet || a.county || a.state || null; } catch (e) { return null; }
+  }
+  let locating = false;
+  function locate() {
+    if (locating) return;
+    if (!navigator.geolocation) { geoMsg.textContent = 'Location is not available in this browser.'; return; }
+    locating = true; geoBtn.setAttribute('aria-busy', 'true'); geoMsg.textContent = '';
+    const done = () => { locating = false; geoBtn.removeAttribute('aria-busy'); };
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const c = pos.coords, lat = +c.latitude.toFixed(3), lon = +c.longitude.toFixed(3), h = c.altitude != null && isFinite(c.altitude) ? Math.max(0, Math.min(9, c.altitude / 1000)) : 0.02;
+      const nm = await Promise.race([placeName(lat, lon), new Promise(r => setTimeout(() => r(null), 4000))]);
+      const me = { key: 'me', name: nm || 'your location', named: !!nm, lat, lon, h }; PLACES.me = me;
+      try { localStorage.setItem('sv-me', JSON.stringify(me)); } catch (e) {}
+      done(); setPlace('me', true);
+    }, err => { done(); geoMsg.textContent = err.code === 1 ? 'Location access was denied. Allow it for this site in your browser settings to use your location.' : 'Could not find your location. Please try again.'; },
+    { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 });
+  }
+  document.querySelectorAll('.place button').forEach(b => b.addEventListener('click', () => { if (b.dataset.place === 'me') locate(); else { geoMsg.textContent = ''; setPlace(b.dataset.place); } }));
   window.addEventListener('hashchange', () => { const h = location.hash.replace('#', '').toLowerCase(); if (PLACES[h]) setPlace(h); });
   applyPlaceText();
 
@@ -836,7 +917,7 @@
   new ResizeObserver(resize).observe(stage);
   function frame() {
     if (simNow() > Date.now() + 12 * 3600000 || simNow() < Date.now() - 2 * 3600000) goLive();
-    update(); placeCamera(); renderer.render(scene, camera); updateTag();
+    update(); placeCamera(); renderer.render(scene, camera); updateTag(); updateHeading();
     requestAnimationFrame(frame);
   }
   const relabel = () => labels.forEach(drawLabel);
