@@ -987,5 +987,13 @@
     await predictPasses(); predictStations();
     setInterval(() => { predictPasses(); paintRail(); renderDataInfo(); }, 10 * 60000);
   }
+  // iPhone app: native northern lights alerts. The page only shows the button; the app checks and notifies.
+  const alertBtn = $('a-alert'), alertBridge = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.alerts;
+  if (alertBtn && alertBridge) {
+    alertBtn.hidden = false;
+    alertBtn.addEventListener('click', () => alertBridge.postMessage({ action: 'open', place: PLACE.key }));
+    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); if (st.text) $('a-alert-state').textContent = st.text; };
+    alertBridge.postMessage({ action: 'state' });
+  }
   boot();
 })();

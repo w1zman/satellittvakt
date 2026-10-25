@@ -168,6 +168,18 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 .cb i { background: color-mix(in srgb, var(--ice) 45%, var(--line)); }
 .bars .m { align-self: center; }
 .src { font-size: 11.5px; color: var(--mist); margin: 0; }
+/* northern lights alerts: only shown inside the iPhone app, which handles the notifications */
+.alertbtn { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 11px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--aurora) 40%, var(--line)); background: color-mix(in srgb, var(--aurora) 8%, transparent); color: var(--frost); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.alertbtn:active { background: color-mix(in srgb, var(--aurora) 16%, transparent); }
+.alertbtn svg { flex: none; display: block; }
+.alertbtn .bell { width: 22px; height: 22px; color: var(--aurora); }
+.alertbtn .chev { width: 16px; height: 16px; color: var(--mist); }
+.alertbtn span { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.alertbtn b { font-weight: 600; font-size: 14.5px; }
+.alertbtn small { font-size: 12px; color: var(--mist); line-height: 1.35; }
+.alertbtn.on small { color: var(--aurora); }
+.alertbtn.on .bell .dot { display: block; }
+.alertbtn .bell .dot { display: none; }
 .src a { color: var(--frost); }
 
 .place button { display: inline-flex; align-items: center; gap: 6px; }
@@ -273,6 +285,11 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         <dl class="kv" id="a-wind"></dl>
         <div class="mini"><h3>Kp forecast, next 24 hours</h3><div class="bars" id="a-kpfc"></div></div>
         <div class="mini"><h3>Cloud cover, next 12 hours</h3><div class="bars" id="a-clouds"></div></div>
+        <button type="button" class="alertbtn" id="a-alert" hidden aria-haspopup="dialog">
+          <svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><circle class="dot" cx="18.5" cy="5.5" r="3.2" fill="currentColor" stroke="var(--panel)" stroke-width="1.5"/></svg>
+          <span><b>Northern lights alerts</b><small id="a-alert-state">Get a notification when they show up over Narvik or Tromsø</small></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
         <p class="src"><span id="a-updated"></span> Sources: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION forecast, Kp, solar wind) and <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (cloud cover, CC BY 4.0). Updated every few minutes.</p>
       </section>
       <section class="card">
