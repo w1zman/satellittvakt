@@ -52,7 +52,7 @@
     kpFc: 'Kp 预报，未来 24 小时',
     cloudFc: '云量，未来 12 小时',
     alertTitle: '北极光提醒',
-    alertState: '纳尔维克或特罗姆瑟出现北极光时通知你',
+    alertState: '挪威或芬兰出现北极光时通知你',
     auroraSrc: '来源：<a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a>（OVATION 预报、Kp、太阳风）和<a href="https://api.met.no" target="_blank" rel="noopener">挪威气象局</a>（云量，CC BY 4.0）。每隔几分钟更新一次。',
     passes: '接下来的明亮过境',
     passesInfo: '未来 12 小时内天色足够暗的时段。列出最高点时间、最大高度角和方向。点按即可跳到那个时刻。',

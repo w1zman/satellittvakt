@@ -342,7 +342,7 @@ html.lang-zh h1 { line-height: 1.1; }
         <div class="mini"><h3 data-i18n="cloudFc">Cloud cover, next 12 hours</h3><div class="bars" id="a-clouds"></div></div>
         <button type="button" class="alertbtn" id="a-alert" hidden aria-haspopup="dialog">
           <svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><circle class="dot" cx="18.5" cy="5.5" r="3.2" fill="currentColor" stroke="var(--panel)" stroke-width="1.5"/></svg>
-          <span><b data-i18n="alertTitle">Northern lights alerts</b><small id="a-alert-state" data-i18n="alertState">Get a notification when they show up over Narvik or Tromsø</small></span>
+          <span><b data-i18n="alertTitle">Northern lights alerts</b><small id="a-alert-state" data-i18n="alertState">Get a notification when they show up in Norway or Finland</small></span>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
         <p class="src"><span id="a-updated"></span> <span data-i18n="auroraSrc">Sources: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION forecast, Kp, solar wind) and <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (cloud cover, CC BY 4.0). Updated every few minutes.</span></p>
@@ -422,7 +422,7 @@ html.lang-zh h1 { line-height: 1.1; }
     kpFc: 'Kp 预报，未来 24 小时',
     cloudFc: '云量，未来 12 小时',
     alertTitle: '北极光提醒',
-    alertState: '纳尔维克或特罗姆瑟出现北极光时通知你',
+    alertState: '挪威或芬兰出现北极光时通知你',
     auroraSrc: '来源：<a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a>（OVATION 预报、Kp、太阳风）和<a href="https://api.met.no" target="_blank" rel="noopener">挪威气象局</a>（云量，CC BY 4.0）。每隔几分钟更新一次。',
     passes: '接下来的明亮过境',
     passesInfo: '未来 12 小时内天色足够暗的时段。列出最高点时间、最大高度角和方向。点按即可跳到那个时刻。',
@@ -1708,7 +1708,7 @@ html.lang-zh h1 { line-height: 1.1; }
   if (alertBtn && alertBridge) {
     alertBtn.hidden = false;
     alertBtn.addEventListener('click', () => alertBridge.postMessage({ action: 'open', place: PLACE.key }));
-    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); const tx = ZH ? (st.on ? '已开启' : '纳尔维克或特罗姆瑟出现北极光时通知你') : st.text; if (tx) $('a-alert-state').textContent = tx; };
+    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); const tx = ZH ? (st.on ? '已开启' : '挪威或芬兰出现北极光时通知你') : st.text; if (tx) $('a-alert-state').textContent = tx; };
     alertBridge.postMessage({ action: 'state' });
   }
   boot();

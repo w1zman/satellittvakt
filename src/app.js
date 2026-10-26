@@ -1096,7 +1096,7 @@
   if (alertBtn && alertBridge) {
     alertBtn.hidden = false;
     alertBtn.addEventListener('click', () => alertBridge.postMessage({ action: 'open', place: PLACE.key }));
-    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); const tx = ZH ? (st.on ? '已开启' : '纳尔维克或特罗姆瑟出现北极光时通知你') : st.text; if (tx) $('a-alert-state').textContent = tx; };
+    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); const tx = ZH ? (st.on ? '已开启' : '挪威或芬兰出现北极光时通知你') : st.text; if (tx) $('a-alert-state').textContent = tx; };
     alertBridge.postMessage({ action: 'state' });
   }
   boot();
