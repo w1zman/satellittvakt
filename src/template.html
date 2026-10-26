@@ -21,9 +21,9 @@
   --warn: #ffb35c;       /* stale data */
   --aurora: #6dfbb0;     /* northern lights */
   --rail: var(--line);   /* timeline rail, set by script */
-  --f-display: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", sans-serif;
-  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --f-display: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", monospace;
 }
 html, body { background: var(--ink); color: var(--frost); }
 body {
@@ -93,6 +93,7 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 .scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .scale span:first-child { transform: none; }
 .scale span:last-child { transform: translateX(-100%); }
+@media (max-width: 600px) { .scale span:first-child { display: none; } } /* "−1 h" collides with "Now" on phones */
 input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; margin: 0; }
 input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--rail); }
 input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--rail); }
@@ -203,35 +204,51 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 .place button[aria-pressed="true"] { background: var(--sun); color: var(--ink); }
 .place button:hover:not([aria-pressed="true"]) { color: var(--frost); }
 @media (prefers-reduced-motion: reduce) { .livepill i { animation: none; } }
+/* language switcher */
+.tools { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lang { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+.lang button { font: 600 12.5px var(--f-body); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 6px 11px 6px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+.lang button[aria-pressed="true"] { background: var(--frost); color: var(--ink); }
+.lang button:hover:not([aria-pressed="true"]) { color: var(--frost); }
+.lang svg { width: 20px; height: 13px; border-radius: 2.5px; flex: none; display: block; box-shadow: 0 0 0 1px rgba(255,255,255,.12); }
+/* Chinese: no letter-spacing tricks meant for Latin capitals */
+html.lang-zh .eyebrow, html.lang-zh h1, html.lang-zh .livepill, html.lang-zh .verdict, html.lang-zh .mini h3 { letter-spacing: 0; }
+html.lang-zh h1 { line-height: 1.1; }
 </style>
 
 <div class="wrap">
   <header>
     <div class="toprow">
-      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68.44° N 17.43° E</span> · the sky in real time</div>
-      <div class="place" role="group" aria-label="Choose place">
-        <button type="button" data-place="me" aria-pressed="false" title="Use my location"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>My location</button>
-        <button type="button" data-place="narvik" aria-pressed="true">Narvik</button>
-        <button type="button" data-place="tromso" aria-pressed="false">Tromsø</button>
+      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68.44° N 17.43° E</span><span data-i18n="eyebrow"> · the sky in real time</span></div>
+      <div class="tools">
+      <div class="lang" role="group" aria-label="Language" data-i18n-aria="langGroup">
+        <button type="button" data-lang="en" aria-pressed="true" lang="en"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="fl-uk-s"><path d="M0,0v30h60V0z"/></clipPath><clipPath id="fl-uk-t"><path d="M30,15h30v15zv15H0zH0V0zV0h30z"/></clipPath><g clip-path="url(#fl-uk-s)"><path d="M0,0v30h60V0z" fill="#012169"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 60,30M60,0 0,30" clip-path="url(#fl-uk-t)" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></g></svg>EN</button>
+        <button type="button" data-lang="zh" aria-pressed="false" lang="zh-CN"><svg viewBox="0 0 30 20" aria-hidden="true"><defs><path id="fl-cn-s" d="M0,-1 .588,.809-.951-.309H.951L-.588,.809z" fill="#FFDE00"/></defs><rect width="30" height="20" fill="#EE1C25"/><use href="#fl-cn-s" transform="translate(5,5) scale(3)"/><use href="#fl-cn-s" transform="translate(10,2) rotate(23.04)"/><use href="#fl-cn-s" transform="translate(12,4) rotate(45.87)"/><use href="#fl-cn-s" transform="translate(12,7) rotate(69.95)"/><use href="#fl-cn-s" transform="translate(10,9) rotate(20.66)"/></svg>中文</button>
+      </div>
+      <div class="place" role="group" aria-label="Choose place" data-i18n-aria="placeGroup">
+        <button type="button" data-place="me" aria-pressed="false" title="Use my location" data-i18n-title="myLocTitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span data-i18n="myLoc">My location</span></button>
+        <button type="button" data-place="narvik" aria-pressed="true" data-i18n="narvik">Narvik</button>
+        <button type="button" data-place="tromso" aria-pressed="false" data-i18n="tromso">Tromsø</button>
+      </div>
       </div>
     </div>
     <p class="geomsg" id="geomsg" role="status" aria-live="polite"></p>
-    <h1><span>Satellites over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt">Live</span></span></h1>
-    <p class="lede">The dots of light are satellites and rocket bodies in sunlight over the town right now, and the green glow is the NOAA northern lights forecast. Drag to turn the view, pinch or scroll to zoom, and tap a dot or a row in the list. Use “My location” for the sky where you are, and the compass in “Look up” to hold your phone flat and see the sky above you.</p>
+    <h1><span data-i18n="h1">Satellites over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt" data-i18n="live">Live</span></span></h1>
+    <p class="lede" data-i18n="lede">The dots of light are satellites and rocket bodies in sunlight over the town right now, and the green glow is the NOAA northern lights forecast. Drag to turn the view, pinch or scroll to zoom, and tap a dot or a row in the list. Use “My location” for the sky where you are, and the compass in “Look up” to hold your phone flat and see the sky above you.</p>
   </header>
 
   <div class="main">
-    <section class="stagecol" aria-label="3D view">
+    <section class="stagecol" aria-label="3D view" data-i18n-aria="view3d">
       <div class="stage" id="stage">
         <canvas id="cv" aria-label="3D view of satellites"></canvas>
-        <div class="loading" id="loading">Loading orbit data …</div>
-        <div class="modes" role="group" aria-label="View">
-          <button type="button" id="m-dome" aria-pressed="true">Sky</button>
-          <button type="button" id="m-look" aria-pressed="false">Look up</button>
-          <button type="button" id="m-globe" aria-pressed="false">Earth</button>
+        <div class="loading" id="loading" data-i18n="loading">Loading orbit data …</div>
+        <div class="modes" role="group" aria-label="View" data-i18n-aria="viewGroup">
+          <button type="button" id="m-dome" aria-pressed="true" data-i18n="sky">Sky</button>
+          <button type="button" id="m-look" aria-pressed="false" data-i18n="look">Look up</button>
+          <button type="button" id="m-globe" aria-pressed="false" data-i18n="earth">Earth</button>
         </div>
         <div class="lookbar" id="lookbar" hidden>
-          <button type="button" class="cmpbtn" id="cmpbtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" stroke-width="1.4"/></svg>Compass</button>
+          <button type="button" class="cmpbtn" id="cmpbtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" stroke-width="1.4"/></svg><span data-i18n="compass">Compass</span></button>
           <span class="heading" id="heading"></span>
           <span class="lookmsg" id="lookmsg" role="status"></span>
         </div>
@@ -244,74 +261,77 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         </div>
         <div class="tag" id="tag" hidden></div>
         <div class="banner" id="banner" hidden><span id="bannertxt"></span></div>
-        <button type="button" class="fsbtn" id="fsbtn" aria-label="Full screen" title="Full screen" aria-pressed="false">
+        <button type="button" class="fsbtn" id="fsbtn" aria-label="Full screen" title="Full screen" aria-pressed="false" data-i18n-aria="fullscreen" data-i18n-title="fullscreen">
           <svg class="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
           <svg class="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </div>
 
       <div class="timeline">
-        <button type="button" class="ctl" id="live" aria-pressed="true"><i></i>Live</button>
+        <button type="button" class="ctl" id="live" aria-pressed="true"><i></i><span data-i18n="live">Live</span></button>
         <div class="track">
-          <input type="range" id="time" min="-60" max="720" step="1" value="0" aria-label="Time from now in minutes">
-          <div class="scale" id="scale"><span style="left:0%">−1 h</span><span id="sc0">Now</span><span id="sc3">+3 h</span><span id="sc6">+6 h</span><span id="sc9">+9 h</span><span style="left:100%">+12 h</span></div>
+          <input type="range" id="time" min="-60" max="720" step="1" value="0" aria-label="Time from now in minutes" data-i18n-aria="timeRange">
+          <div class="scale" id="scale"><span style="left:0%">−1 h</span><span id="sc0" data-i18n="now">Now</span><span id="sc3">+3 h</span><span id="sc6">+6 h</span><span id="sc9">+9 h</span><span style="left:100%">+12 h</span></div>
         </div>
-        <div class="speeds" role="group" aria-label="Speed">
+        <div class="speeds" role="group" aria-label="Speed" data-i18n-aria="speedGroup">
           <button type="button" data-s="1" aria-pressed="true">1×</button>
           <button type="button" data-s="60" aria-pressed="false">60×</button>
           <button type="button" data-s="600" aria-pressed="false">600×</button>
         </div>
       </div>
 
-      <div class="layers" role="group" aria-label="Layers">
-        <button type="button" class="chip" id="l-station" aria-pressed="true"><i style="background:var(--station)"></i>Space stations <small id="c-station">–</small></button>
-        <button type="button" class="chip" id="l-bright" aria-pressed="true"><i style="background:var(--sun)"></i>Bright objects <small id="c-bright">–</small></button>
-        <button type="button" class="chip" id="l-starlink" aria-pressed="true"><i style="background:var(--ice)"></i>Starlink <small id="c-starlink">–</small></button>
-        <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i>Northern lights <small id="c-aurora">–</small></button>
-        <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i>Show those in Earth's shadow</button>
+      <div class="layers" role="group" aria-label="Layers" data-i18n-aria="layersGroup">
+        <button type="button" class="chip" id="l-station" aria-pressed="true"><i style="background:var(--station)"></i><span data-i18n="stations">Space stations</span> <small id="c-station">–</small></button>
+        <button type="button" class="chip" id="l-bright" aria-pressed="true"><i style="background:var(--sun)"></i><span data-i18n="bright">Bright objects</span> <small id="c-bright">–</small></button>
+        <button type="button" class="chip" id="l-starlink" aria-pressed="true"><i style="background:var(--ice)"></i><span data-i18n="starlink">Starlink</span> <small id="c-starlink">–</small></button>
+        <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i><span data-i18n="aurora">Northern lights</span> <small id="c-aurora">–</small></button>
+        <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i><span data-i18n="shade">Show those in Earth's shadow</span></button>
       </div>
-      <p class="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The pulsing green ring marks the closest sunlit satellite in view, preferring one that is coming closer. The stars are included for orientation.</p>
+      <p class="method" data-i18n="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The pulsing green ring marks the closest sunlit satellite in view, preferring one that is coming closer. The stars are included for orientation.</p>
     </section>
 
     <aside>
       <section class="card aur" aria-live="polite">
-        <div class="aurhead"><h2>Northern lights now</h2><span class="verdict wait" id="a-verdict">Loading …</span></div>
-        <p id="a-summary">Loading data from NOAA and the Norwegian Meteorological Institute …</p>
+        <div class="aurhead"><h2 data-i18n="auroraNow">Northern lights now</h2><span class="verdict wait" id="a-verdict" data-i18n="loadingShort">Loading …</span></div>
+        <p id="a-summary" data-i18n="auroraLoading">Loading data from NOAA and the Norwegian Meteorological Institute …</p>
         <div class="astats">
-          <div class="stat"><b id="a-prob">–</b><span>probability over <span class="pname">Narvik</span></span></div>
-          <div class="stat"><b id="a-kp">–</b><span>Kp index now</span></div>
-          <div class="stat"><b id="a-cloud">–</b><span>cloud cover in <span class="pname">Narvik</span></span></div>
+          <div class="stat"><b id="a-prob">–</b><span data-i18n="probOver">probability over <span class="pname">Narvik</span></span></div>
+          <div class="stat"><b id="a-kp">–</b><span data-i18n="kpNow">Kp index now</span></div>
+          <div class="stat"><b id="a-cloud">–</b><span data-i18n="cloudIn">cloud cover in <span class="pname">Narvik</span></span></div>
         </div>
         <dl class="kv" id="a-wind"></dl>
-        <div class="mini"><h3>Kp forecast, next 24 hours</h3><div class="bars" id="a-kpfc"></div></div>
-        <div class="mini"><h3>Cloud cover, next 12 hours</h3><div class="bars" id="a-clouds"></div></div>
+        <div class="mini"><h3 data-i18n="kpFc">Kp forecast, next 24 hours</h3><div class="bars" id="a-kpfc"></div></div>
+        <div class="mini"><h3 data-i18n="cloudFc">Cloud cover, next 12 hours</h3><div class="bars" id="a-clouds"></div></div>
         <button type="button" class="alertbtn" id="a-alert" hidden aria-haspopup="dialog">
           <svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><circle class="dot" cx="18.5" cy="5.5" r="3.2" fill="currentColor" stroke="var(--panel)" stroke-width="1.5"/></svg>
-          <span><b>Northern lights alerts</b><small id="a-alert-state">Get a notification when they show up over Narvik or Tromsø</small></span>
+          <span><b data-i18n="alertTitle">Northern lights alerts</b><small id="a-alert-state" data-i18n="alertState">Get a notification when they show up over Narvik or Tromsø</small></span>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
-        <p class="src"><span id="a-updated"></span> Sources: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION forecast, Kp, solar wind) and <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (cloud cover, CC BY 4.0). Updated every few minutes.</p>
+        <p class="src"><span id="a-updated"></span> <span data-i18n="auroraSrc">Sources: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION forecast, Kp, solar wind) and <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (cloud cover, CC BY 4.0). Updated every few minutes.</span></p>
       </section>
       <section class="card">
-        <h2>Next bright passes</h2>
-        <p class="m">The next 12 hours, when the sky is dark enough. Time of highest point, max altitude and direction. Tap to jump there.</p>
+        <h2 data-i18n="passes">Next bright passes</h2>
+        <p class="m" data-i18n="passesInfo">The next 12 hours, when the sky is dark enough. Time of highest point, max altitude and direction. Tap to jump there.</p>
         <div class="list">
-          <div class="listhead"><span>Time</span><span>Object</span><span style="text-align:right">Max</span><span style="text-align:right">Dir.</span></div>
-          <div class="scroller" id="rows"><div class="empty">Calculating passes …</div></div>
+          <div class="listhead"><span data-i18n="colTime">Time</span><span data-i18n="colObject">Object</span><span style="text-align:right" data-i18n="colMax">Max</span><span style="text-align:right" data-i18n="colDir">Dir.</span></div>
+          <div class="scroller" id="rows"><div class="empty" data-i18n="calcPasses">Calculating passes …</div></div>
         </div>
       </section>
       <section class="card">
-        <h2>Space stations</h2>
-        <dl class="kv" id="stations"><dt>ISS</dt><dd>Calculating …</dd><dt>Tiangong</dt><dd>Calculating …</dd></dl>
+        <h2 data-i18n="spaceStations">Space stations</h2>
+        <dl class="kv" id="stations"><dt data-i18n="iss">ISS</dt><dd data-i18n="calculating">Calculating …</dd><dt data-i18n="tiangong">Tiangong</dt><dd data-i18n="calculating">Calculating …</dd></dl>
       </section>
       <section class="card">
-        <h2>Orbit data</h2>
-        <dl class="kv" id="datainfo"><dt>Fetched</dt><dd>–</dd></dl>
+        <h2 data-i18n="orbitData">Orbit data</h2>
+        <dl class="kv" id="datainfo"><dt data-i18n="fetched">Fetched</dt><dd>–</dd></dl>
       </section>
     </aside>
   </div>
 </div>
 
+<script>
+/*I18NJS*/
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /*ORBJS*/

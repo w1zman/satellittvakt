@@ -1,10 +1,11 @@
 (function () {
   const O = window.ORB, D2R = Math.PI / 180, RE = 6378.137;
   const $ = id => document.getElementById(id);
+  const L = window.L || ((en) => en), ZH = window.SV_LANG === 'zh';
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const PLACES = { narvik: { key: 'narvik', name: 'Narvik', lat: 68.4385, lon: 17.4273, h: 0.02 }, tromso: { key: 'tromso', name: 'Tromsø', lat: 69.6496, lon: 18.9560, h: 0.02 } };
-  try { const m = JSON.parse(localStorage.getItem('sv-me') || 'null'); if (m && isFinite(m.lat) && isFinite(m.lon) && Math.abs(m.lat) <= 90) PLACES.me = { key: 'me', name: m.name || 'your location', named: !!m.named, lat: +m.lat, lon: +m.lon, h: isFinite(m.h) ? +m.h : 0.02 }; } catch (e) {}
-  const placeLabel = p => p.key === 'me' && !p.named ? 'You are here' : p.name;
+  const PLACES = { narvik: { key: 'narvik', name: L('Narvik', '纳尔维克'), lat: 68.4385, lon: 17.4273, h: 0.02 }, tromso: { key: 'tromso', name: L('Tromsø', '特罗姆瑟'), lat: 69.6496, lon: 18.9560, h: 0.02 } };
+  try { const m = JSON.parse(localStorage.getItem('sv-me') || 'null'); if (m && isFinite(m.lat) && isFinite(m.lon) && Math.abs(m.lat) <= 90) PLACES.me = { key: 'me', name: m.name || L('your location', '你的位置'), named: !!m.named, lat: +m.lat, lon: +m.lon, h: isFinite(m.h) ? +m.h : 0.02 }; } catch (e) {}
+  const placeLabel = p => p.key === 'me' && !p.named ? L('You are here', '你在这里') : p.name;
   let PLACE, LAT, LON, OBS, sLa, cLa, sLo, cLo;
   function setObserver(key) {
     PLACE = PLACES[key] || PLACES.narvik; LAT = PLACE.lat; LON = PLACE.lon; OBS = O.geodeticToEcef(LAT, LON, PLACE.h);
@@ -15,17 +16,18 @@
   setObserver(initialPlace);
   const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const num = (x, d = 0) => x.toFixed(d).replace('-', '−');
-  const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const DIRS = ZH ? ['北', '北东北', '东北', '东东北', '东', '东东南', '东南', '南东南', '南', '南西南', '西南', '西西南', '西', '西西北', '西北', '北西北']
+    : ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const dirName = a => DIRS[Math.round(((a % 360) + 360) % 360 / 22.5) % 16];
 
   // ---------- time in Oslo ----------
-  const WD = { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' };
+  const WD = ZH ? { Mon: '周一', Tue: '周二', Wed: '周三', Thu: '周四', Fri: '周五', Sat: '周六', Sun: '周日' } : { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' };
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const fmtP = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Oslo', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
   function oslo(t) { const p = {}; for (const x of fmtP.formatToParts(new Date(t))) p[x.type] = x.value; return { y: +p.year, mo: +p.month, d: +p.day, h: p.hour === '24' ? '00' : p.hour, mi: p.minute, s: p.second, wd: WD[p.weekday] || p.weekday }; }
   const hm = t => { const o = oslo(t); return o.h + ':' + o.mi; };
   const dayKey = t => { const o = oslo(t); return o.y * 10000 + o.mo * 100 + o.d; };
-  const dateStr = t => { const o = oslo(t); return o.wd + ' ' + o.d + ' ' + MON[o.mo - 1]; };
+  const dateStr = t => { const o = oslo(t); return ZH ? o.mo + '月' + o.d + '日 ' + o.wd : o.wd + ' ' + o.d + ' ' + MON[o.mo - 1]; };
 
   // ---------- astronomy helpers ----------
   function enu(x, y, z) { const dx = x - OBS[0], dy = y - OBS[1], dz = z - OBS[2];
@@ -43,18 +45,18 @@
 
   // ---------- objects ----------
   const OBJ = []; let N = 0;
-  const KIND_NAME = ['Space station', '', 'Starlink'];
+  const KIND_NAME = [L('Space station', '空间站'), '', L('Starlink', '星链')];
   function addObjects(rows, group) {
     for (const el of rows) {
       let s; try { s = O.init(el); } catch (e) { continue; }
       if (!isFinite(s.mdot) || !isFinite(s.ao)) continue;
       let kind = group === 'starlink' ? 2 : (el.id === 25544 || el.id === 48274) ? 0 : 1;
-      const name = el.id === 25544 ? 'ISS' : el.id === 48274 ? 'Tiangong (CSS)' : el.name;
+      const name = el.id === 25544 ? L('ISS', '国际空间站') : el.id === 48274 ? L('Tiangong (CSS)', '天宫空间站') : el.name;
       OBJ.push({ name, intl: el.intl, id: el.id, kind, s, epoch: s.t0 });
     }
     N = OBJ.length;
   }
-  const kindLabel = o => o.kind === 0 ? 'Space station' : o.kind === 2 ? 'Starlink' : /R\/B|DEB/.test(o.name) ? 'Rocket body' : 'Satellite';
+  const kindLabel = o => o.kind === 0 ? L('Space station', '空间站') : o.kind === 2 ? L('Starlink', '星链') : /R\/B|DEB/.test(o.name) ? L('Rocket body', '火箭箭体') : L('Satellite', '卫星');
 
   // ---------- time model ----------
   let speed = 1, anchorWall = Date.now(), anchorSim = anchorWall, live = true;
@@ -119,7 +121,7 @@
 
   const labels = [];
   function makeLabel(text, opt) {
-    const o = Object.assign({ px: 64, color: '#e4ecf7', weight: '600', family: '"Instrument Sans", system-ui, sans-serif', h: 1, depthTest: false }, opt || {});
+    const o = Object.assign({ px: 64, color: '#e4ecf7', weight: '600', family: '"Instrument Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif', h: 1, depthTest: false }, opt || {});
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: o.depthTest, depthWrite: false }));
     sp.renderOrder = 10; sp.userData = { text, o, c: document.createElement('canvas') }; drawLabel(sp); labels.push(sp); return sp;
   }
@@ -131,9 +133,9 @@
     const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
     sp.material.map = tex; sp.material.needsUpdate = true; const k = sp.userData.k || 1; sp.userData.sx = o.h * c.width / c.height; sp.scale.set(sp.userData.sx * k, o.h * k, 1);
   }
-  const DISPLAY = '"Big Shoulders Display", "Arial Narrow", sans-serif';
-  [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, az]) => {
-    const s = makeLabel(t, { family: DISPLAY, weight: '800', px: 96, h: 1.25, color: t === 'N' ? '#ffc66b' : '#e4ecf7' });
+  const DISPLAY = '"Big Shoulders Display", "Arial Narrow", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+  [[L('N', '北'), 0], [L('E', '东'), 90], [L('S', '南'), 180], [L('W', '西'), 270]].forEach(([t, az]) => {
+    const s = makeLabel(t, { family: DISPLAY, weight: '800', px: 96, h: 1.25, color: az === 0 ? '#ffc66b' : '#e4ecf7' });
     s.userData.compass = az; domeG.add(s);
   });
   [10, 30, 60].forEach(el => { const s = makeLabel(el + '°', { px: 48, h: 0.5, color: '#8d9cb5', family: '"JetBrains Mono", monospace', weight: '400' }); s.position.copy(toDome(0, -Math.cos(el * D2R), Math.sin(el * D2R), R + 0.05)).add(new THREE.Vector3(0.45, 0.2, 0)); domeG.add(s); });
@@ -173,8 +175,10 @@
   const constPos = new Float32Array(constSegs.length * 6), constGeo = new THREE.BufferGeometry();
   constGeo.setAttribute('position', new THREE.BufferAttribute(constPos, 3));
   const constLines = new THREE.LineSegments(constGeo, lineMat(0x9fb3d6, 0.22)); constLines.frustumCulled = false; starG.add(constLines);
-  const starLbls = STARS.map(s => { if (!s[4]) return null; const l = makeLabel(s[0], { px: 44, h: 0.42, color: '#aab8cf', weight: '500' }); starG.add(l); return l; });
-  const constLbls = CONST.map(c => { const l = makeLabel(c[0], { px: 44, h: 0.42, color: '#7f90ad', weight: '500' }); starG.add(l); return l; });
+  const STAR_ZH = { Polaris: '北极星', Vega: '织女星', Deneb: '天津四', Altair: '牛郎星', Capella: '五车二', Arcturus: '大角星', Aldebaran: '毕宿五', Betelgeuse: '参宿四', Rigel: '参宿七' };
+  const CONST_ZH = { 'Big Dipper': '北斗七星', Cassiopeia: '仙后座', 'Summer Triangle': '夏季大三角', Orion: '猎户座' };
+  const starLbls = STARS.map(s => { if (!s[4]) return null; const l = makeLabel(ZH ? STAR_ZH[s[0]] || s[0] : s[0], { px: 44, h: 0.42, color: '#aab8cf', weight: '500' }); starG.add(l); return l; });
+  const constLbls = CONST.map(c => { const l = makeLabel(ZH ? CONST_ZH[c[0]] || c[0] : c[0], { px: 44, h: 0.42, color: '#7f90ad', weight: '500' }); starG.add(l); return l; });
   function updateStars(t, sunEl) {
     const lst = O.gmst(t) + LON * D2R, skyA = Math.max(0, Math.min(1, (-sunEl - 3) / 9));
     STARS.forEach((s, i) => {
@@ -226,12 +230,14 @@
       l.position.copy(u.off).multiplyScalar(k).add(u.surf); l.scale.set(u.sx * k, u.o.h * k, 1); };
     globeG.children.forEach(each); if (placeMark) placeMark.children.forEach(each);
   }
+  const CITY_ZH = { Narvik: '纳尔维克', 'Tromsø': '特罗姆瑟', 'Bodø': '博德', Nordkapp: '北角', Oslo: '奥斯陆', Longyearbyen: '朗伊尔城', 'Reykjavík': '雷克雅未克', Stockholm: '斯德哥尔摩', Helsinki: '赫尔辛基', London: '伦敦', 'North Pole': '北极' };
   const CITIES = [['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
     ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['North Pole', 90, 0]];
   { const cp = new Float32Array(CITIES.length * 3), cs = new Float32Array(CITIES.length), cc = new Float32Array(CITIES.length * 4);
     CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = 3.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
-      const l = makeLabel(c[0], { px: 48, h: 0.022, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
-      l.position.copy(geoV(c[1], c[2], 1.014)); l.position.y += 0.0055; l.userData.city = c[0]; pinLabel(l, geoV(c[1], c[2], 1)); globeG.add(l); });
+      const cn = ZH ? CITY_ZH[c[0]] || c[0] : c[0];
+      const l = makeLabel(cn, { px: 48, h: 0.022, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
+      l.position.copy(geoV(c[1], c[2], 1.014)); l.position.y += 0.0055; l.userData.city = cn; pinLabel(l, geoV(c[1], c[2], 1)); globeG.add(l); });
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(cp, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(cs, 1)); g.setAttribute('aCol', new THREE.BufferAttribute(cc, 4));
     const m = ptMat(); m.depthTest = true; globeG.add(new THREE.Points(g, m)); }
   // world map: Natural Earth 1:50m via world-atlas, loaded the first time the globe is shown
@@ -423,7 +429,7 @@
     selGeo.setDrawRange(0, n * 2); selGeo.attributes.position.needsUpdate = true; selGeo.attributes.color.needsUpdate = true;
   }
 
-  function skyState(el) { return el > -0.83 ? 'Daylight' : el > -6 ? 'Civil twilight' : el > -12 ? 'Nautical twilight' : el > -18 ? 'Astronomical twilight' : 'Dark'; }
+  function skyState(el) { return el > -0.83 ? L('Daylight', '白天') : el > -6 ? L('Civil twilight', '民用晨昏蒙影') : el > -12 ? L('Nautical twilight', '航海晨昏蒙影') : el > -18 ? L('Astronomical twilight', '天文晨昏蒙影') : L('Dark', '天黑'); }
   let lastReadout = '';
   function updateReadout(t, sun) {
     const o = oslo(t), clock = o.h + ':' + o.mi + ':' + o.s;
@@ -431,27 +437,27 @@
     $('clock').textContent = clock;
     const off = Math.round((t - Date.now()) / 60000);
     let dl = dateStr(t);
-    if (!live) dl += ' · ' + (off === 0 ? 'now' : (off > 0 ? '+' : '−') + (Math.abs(off) >= 60 ? Math.floor(Math.abs(off) / 60) + ' h ' : '') + (Math.abs(off) % 60) + ' min') + (speed > 1 ? ' · ' + speed + '×' : '');
+    if (!live) dl += ' · ' + (off === 0 ? L('now', '现在') : (off > 0 ? '+' : '−') + (Math.abs(off) >= 60 ? Math.floor(Math.abs(off) / 60) + L(' h ', ' 小时 ') : '') + (Math.abs(off) % 60) + L(' min', ' 分钟')) + (speed > 1 ? ' · ' + speed + '×' : '');
     $('dateline').textContent = dl;
-    $('sunline').textContent = 'Sun ' + num(sun.el, 1) + '° · ' + skyState(sun.el);
+    $('sunline').textContent = L('Sun ', '太阳 ') + num(sun.el, 1) + '° · ' + skyState(sun.el);
     const parts = [];
     if (sun.el < -6) {
-      if (counts[0]) parts.push('<span class="b">' + (counts[0] === 1 ? '1 space station' : counts[0] + ' space stations') + '</span>');
-      parts.push('<span class="b">' + counts[1] + ' bright</span>');
-      if (starlinkState === 'ok') parts.push('<span class="s">' + counts[2] + ' Starlink</span>');
-      if (AUR.pN != null && Math.abs(t - Date.now()) < 90 * 60000) parts.push('<span class="a">aurora ' + Math.round(AUR.pN) + ' %</span>');
-      $('nowline').innerHTML = 'Visible: ' + parts.join(' · ');
-    } else $('nowline').textContent = 'Too bright to see satellites';
-    $('livetxt').textContent = live ? 'Live' : 'Shifted';
+      if (counts[0]) parts.push('<span class="b">' + (ZH ? counts[0] + ' 个空间站' : counts[0] === 1 ? '1 space station' : counts[0] + ' space stations') + '</span>');
+      parts.push('<span class="b">' + counts[1] + L(' bright', ' 个亮目标') + '</span>');
+      if (starlinkState === 'ok') parts.push('<span class="s">' + counts[2] + L(' Starlink', ' 颗星链') + '</span>');
+      if (AUR.pN != null && Math.abs(t - Date.now()) < 90 * 60000) parts.push('<span class="a">' + L('aurora ', '极光 ') + Math.round(AUR.pN) + ' %</span>');
+      $('nowline').innerHTML = L('Visible: ', '可见：') + parts.join(' · ');
+    } else $('nowline').textContent = L('Too bright to see satellites', '天太亮，看不到卫星');
+    $('livetxt').textContent = live ? L('Live', '实时') : L('Shifted', '已调时');
     const cj = CLOSE.j;
-    $('closeline').innerHTML = cj >= 0 ? '<i></i>Closest: ' + esc(OBJ[cj].name) + ' · ' + Math.round(CLOSE.rng).toLocaleString('en-GB') + ' km · ' + (CLOSE.appr ? 'coming closer' : 'moving away') : '';
+    $('closeline').innerHTML = cj >= 0 ? '<i></i>' + L('Closest: ', '最近：') + esc(OBJ[cj].name) + ' · ' + Math.round(CLOSE.rng).toLocaleString('en-GB') + L(' km · ', ' 公里 · ') + (CLOSE.appr ? L('coming closer', '正在靠近') : L('moving away', '正在远离')) : '';
     const ti = $('time'); if (document.activeElement !== ti) ti.value = Math.max(-60, Math.min(720, off));
     // banner
     const msgs = [];
-    if (sun.el > -6) msgs.push(nextDark ? 'The sky is too bright right now. It gets dark enough around ' + hm(nextDark) + (dayKey(nextDark) !== dayKey(t) ? ' (' + dateStr(nextDark) + ')' : '') + '.' : 'The sky is too bright to see satellites right now.');
+    if (sun.el > -6) msgs.push(nextDark ? (ZH ? '现在天还太亮，大约 ' + (dayKey(nextDark) !== dayKey(t) ? dateStr(nextDark) + ' ' : '') + hm(nextDark) + ' 天色才足够暗。' : 'The sky is too bright right now. It gets dark enough around ' + hm(nextDark) + (dayKey(nextDark) !== dayKey(t) ? ' (' + dateStr(nextDark) + ')' : '') + '.') : L('The sky is too bright to see satellites right now.', '现在天太亮，看不到卫星。'));
     const oldest = Math.max(dataAgeDays(), starlinkState === 'ok' ? slAgeDays() : 0);
-    if (oldest > 4) msgs.push('The orbit data is ' + Math.floor(oldest) + ' days old, so positions may be off by several degrees.');
-    $('banner').hidden = !msgs.length; $('bannertxt').textContent = msgs.join(' ');
+    if (oldest > 4) msgs.push(L('The orbit data is ' + Math.floor(oldest) + ' days old, so positions may be off by several degrees.', '轨道数据已有 ' + Math.floor(oldest) + ' 天，位置可能偏差好几度。'));
+    $('banner').hidden = !msgs.length; $('bannertxt').textContent = msgs.join(L(' ', ''));
   }
 
   // ---------- phone compass for "Look up" (device orientation → camera) ----------
@@ -469,7 +475,7 @@
       const want = ((360 - e.webkitCompassHeading - alpha) % 360 + 360) % 360;
       if (compass.off == null) compass.off = want; else { const d = ((want - compass.off + 540) % 360) - 180; compass.off = (compass.off + d * 0.04 + 360) % 360; }
       alpha += compass.off;
-    } else if (ORIENT_EV === 'deviceorientation' && !e.absolute && !compass.rel) { compass.rel = true; lookMsg('This phone does not report north, so directions may be off.'); }
+    } else if (ORIENT_EV === 'deviceorientation' && !e.absolute && !compass.rel) { compass.rel = true; lookMsg(L('This phone does not report north, so directions may be off.', '这部手机不提供正北方向，方向可能不准。')); }
     const so = ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * D2R;
     cEu.set(e.beta * D2R, alpha * D2R, -e.gamma * D2R, 'YXZ');
     compass.tgt.setFromEuler(cEu).multiply(cQ1).multiply(cQ0.setFromAxisAngle(ZEE, -so));
@@ -481,14 +487,14 @@
       const DOE = window.DeviceOrientationEvent;
       if (DOE && typeof DOE.requestPermission === 'function') {
         let r = 'denied'; try { r = await DOE.requestPermission(); } catch (e) {}
-        if (r !== 'granted') { lookMsg('Motion and compass access was denied.'); return; }
+        if (r !== 'granted') { lookMsg(L('Motion and compass access was denied.', '动作与指南针权限被拒绝。')); return; }
       }
       if (mode !== 'look') setMode('look');
       Object.assign(compass, { on: true, have: false, off: null, rel: false });
       window.addEventListener(ORIENT_EV, onOrient);
       clearTimeout(compass.timer);
-      compass.timer = setTimeout(() => { if (compass.on && !compass.have) { setCompass(false); lookMsg('No compass found on this device.'); } }, 3000);
-      lookMsg('Hold your phone flat, screen up, and look down at it. The top of the phone points the way you face.');
+      compass.timer = setTimeout(() => { if (compass.on && !compass.have) { setCompass(false); lookMsg(L('No compass found on this device.', '此设备上没有找到指南针。')); } }, 3000);
+      lookMsg(L('Hold your phone flat, screen up, and look down at it. The top of the phone points the way you face.', '将手机平放、屏幕朝上，低头看屏幕。手机顶部指向你面朝的方向。'));
     } else {
       compass.on = false; compass.have = false; clearTimeout(compass.timer); window.removeEventListener(ORIENT_EV, onOrient);
     }
@@ -499,7 +505,7 @@
   let lastHeading = '';
   function updateHeading() {
     if (mode !== 'look') return;
-    const az = ((cam.look.az / D2R) % 360 + 360) % 360, s = 'Facing ' + dirName(az) + ' ' + Math.round(az) % 360 + '° · ' + Math.round(cam.look.pitch / D2R) + '° up';
+    const az = ((cam.look.az / D2R) % 360 + 360) % 360, s = ZH ? '朝向 ' + dirName(az) + ' ' + Math.round(az) % 360 + '° · 仰角 ' + Math.round(cam.look.pitch / D2R) + '°' : 'Facing ' + dirName(az) + ' ' + Math.round(az) % 360 + '° · ' + Math.round(cam.look.pitch / D2R) + '° up';
     if (s !== lastHeading) { lastHeading = s; $('heading').textContent = s; }
   }
 
@@ -587,8 +593,11 @@
     if (!show) { tag.hidden = true; return; }
     const o = OBJ[j], t = simNow(), st = stateAt(o, t, Math.cos(O.gmst(t)), Math.sin(O.gmst(t)), sunNow.eci, false), alt = Math.hypot(st.x, st.y, st.z) - 6371;
     const nx = PASSES.find(ps => ps.j === j && ps.tEnd > t);
-    tag.innerHTML = '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · ' + Math.round(alt) + ' km up</span><br><span>' + (el >= 0 ? num(el) + '° above the horizon to the ' + dirName(curAz[j]) : 'below the horizon') + ' · ' + (lit ? 'in sunlight' : 'in Earth’s shadow') + '</span>' +
-      (nx ? '<br><span>' + (nx.tStart <= t ? 'Visible now, highest ' : 'Next: ') + num(nx.maxEl) + '° at ' + hm(nx.tMax) + '</span>' : '');
+    tag.innerHTML = ZH
+      ? '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · 高度 ' + Math.round(alt) + ' 公里</span><br><span>' + (el >= 0 ? dirName(curAz[j]) + '方，地平线上 ' + num(el) + '°' : '在地平线以下') + ' · ' + (lit ? '被阳光照亮' : '在地球阴影中') + '</span>' +
+        (nx ? '<br><span>' + (nx.tStart <= t ? '现在可见，' : '下一次：') + hm(nx.tMax) + ' 最高 ' + num(nx.maxEl) + '°</span>' : '')
+      : '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · ' + Math.round(alt) + ' km up</span><br><span>' + (el >= 0 ? num(el) + '° above the horizon to the ' + dirName(curAz[j]) : 'below the horizon') + ' · ' + (lit ? 'in sunlight' : 'in Earth’s shadow') + '</span>' +
+        (nx ? '<br><span>' + (nx.tStart <= t ? 'Visible now, highest ' : 'Next: ') + num(nx.maxEl) + '° at ' + hm(nx.tMax) + '</span>' : '');
     tag.hidden = false;
     const r = stage.getBoundingClientRect(), tw = tag.offsetWidth, th = tag.offsetHeight; let left = p.x + 14, top = p.y - th / 2;
     if (left + tw > r.width - 8) left = p.x - tw - 14;
@@ -629,11 +638,11 @@
   function renderPasses() {
     const rows = $('rows'); rows.innerHTML = '';
     const now = Date.now(), list = PASSES.filter(p => p.tEnd >= now - 60000).slice(0, 40);
-    if (!list.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = nextDark ? 'No bright passes while it is dark in the next 12 hours. The next dark period starts around ' + hm(nextDark) + '.' : 'No bright passes in the next 12 hours.'; rows.appendChild(d); return; }
+    if (!list.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = nextDark ? L('No bright passes while it is dark in the next 12 hours. The next dark period starts around ' + hm(nextDark) + '.', '未来 12 小时内天黑时没有明亮过境。下一个天黑时段大约从 ' + hm(nextDark) + ' 开始。') : L('No bright passes in the next 12 hours.', '未来 12 小时内没有明亮过境。'); rows.appendChild(d); return; }
     list.forEach(p => {
       const o = OBJ[p.j], b = document.createElement('button'); b.type = 'button'; b.className = 'row' + (o.kind === 0 ? ' st' : ''); b.dataset.j = p.j; b.setAttribute('aria-pressed', String(sel === p.j));
       const onNow = p.tStart <= now && p.tEnd >= now, other = dayKey(p.tMax) !== dayKey(now);
-      b.innerHTML = '<span class="t">' + hm(p.tMax) + (onNow ? '<small class="on">now</small>' : other ? '<small>' + oslo(p.tMax).wd + '</small>' : '') + '</span><span class="n"><b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · from ' + dirName(p.azStart) + ' to ' + dirName(p.azEnd) + '</span></span><span class="e' + (p.maxEl >= 60 ? ' hi' : '') + '">' + num(p.maxEl) + '°</span><span class="d">' + dirName(p.azMax) + '</span>';
+      b.innerHTML = '<span class="t">' + hm(p.tMax) + (onNow ? '<small class="on">' + L('now', '现在') + '</small>' : other ? '<small>' + oslo(p.tMax).wd + '</small>' : '') + '</span><span class="n"><b>' + esc(o.name) + '</b><span>' + kindLabel(o) + (ZH ? ' · 从' + dirName(p.azStart) + '到' + dirName(p.azEnd) : ' · from ' + dirName(p.azStart) + ' to ' + dirName(p.azEnd)) + '</span></span><span class="e' + (p.maxEl >= 60 ? ' hi' : '') + '">' + num(p.maxEl) + '°</span><span class="d">' + dirName(p.azMax) + '</span>';
       b.addEventListener('click', () => {
         if (sel === p.j) { select(-1); return; }
         select(p.j);
@@ -647,9 +656,9 @@
     const gen = predGen, dl = $('stations'); dl.innerHTML = '';
     const t0 = Date.now(), STEP = 30000, DAYS = 5, NSx = DAYS * 2880;
     for (const id of [25544, 48274]) {
-      const j = OBJ.findIndex(o => o.id === id); const name = id === 25544 ? 'ISS' : 'Tiangong';
+      const j = OBJ.findIndex(o => o.id === id); const name = id === 25544 ? L('ISS', '国际空间站') : L('Tiangong', '天宫');
       const dt = document.createElement('dt'); dt.textContent = name; const dd = document.createElement('dd'); dl.append(dt, dd);
-      if (j < 0) { dd.textContent = 'No orbit data.'; continue; }
+      if (j < 0) { dd.textContent = L('No orbit data.', '没有轨道数据。'); continue; }
       let first = null, maxAny = -90, maxT = 0, k0 = 0;
       for (let k = 0; k <= NSx; k++) {
         const t = t0 + k * STEP, gm = O.gmst(t), st = stateAt(OBJ[j], t, Math.cos(gm), Math.sin(gm), null, false);
@@ -657,7 +666,14 @@
         if (!first && st.el >= 10) { const s = sunAt(t); if (s.el < -6 && O.litFraction(O.prop(OBJ[j].s, t).r, s.eci) >= 0.5) first = { t, el: st.el, az: st.az }; }
         if (k - k0 > 600) { k0 = k; await sleep(); if (gen !== predGen) return; }
       }
-      if (first) dd.textContent = 'Next visible pass ' + dateStr(first.t) + ' at ' + hm(first.t) + ', towards ' + dirName(first.az) + '.';
+      if (ZH) {
+        const far = LAT >= 0 ? '北' : '南', side = LAT >= 0 ? '南' : '北';
+        if (first) dd.textContent = '下一次可见过境：' + dateStr(first.t) + ' ' + hm(first.t) + '，朝' + dirName(first.az) + '方向。';
+        else if (maxAny < 0) dd.textContent = '从' + PLACE.name + '看，它从不升到地平线以上，因为它的轨道不够靠' + far + '。';
+        else if (maxAny < 10) dd.textContent = '未来 ' + DAYS + ' 天没有可见过境。从' + PLACE.name + '看，它在' + side + '方地平线上最高只有 ' + num(maxAny) + '°，因为它的轨道不够靠' + far + '。';
+        else dd.textContent = '未来 ' + DAYS + ' 天没有可见过境。它经过' + PLACE.name + '上空时，要么天太亮，要么它在地球阴影中。';
+      }
+      else if (first) dd.textContent = 'Next visible pass ' + dateStr(first.t) + ' at ' + hm(first.t) + ', towards ' + dirName(first.az) + '.';
       else if (maxAny < 0) dd.textContent = 'Never rises above the horizon as seen from ' + PLACE.name + '. Its orbit does not reach far enough ' + (LAT >= 0 ? 'north' : 'south') + '.';
       else if (maxAny < 10) dd.textContent = 'No visible passes in the next ' + DAYS + ' days. From ' + PLACE.name + ' it gets no higher than ' + num(maxAny) + '° above the ' + (LAT >= 0 ? 'southern' : 'northern') + ' horizon, because its orbit does not reach far enough ' + (LAT >= 0 ? 'north' : 'south') + '.';
       else dd.textContent = 'No visible passes in the next ' + DAYS + ' days. When it passes over ' + PLACE.name + ', it is either too bright or it is in Earth’s shadow.';
@@ -669,8 +685,9 @@
   const dataAgeDays = () => fetched ? (Date.now() - fetched) / 86400000 : 0;
   const slAgeDays = () => slFetched ? (Date.now() - slFetched) / 86400000 : 0;
   function ageHtml(t) {
-    const age = (Date.now() - t) / 86400000, h = Math.round(age * 24), cls = age < 1.5 ? 'ok' : age < 4 ? 'mid' : 'old', lbl = age < 1.5 ? 'fresh' : age < 4 ? 'OK' : 'old';
-    return esc(dateStr(t)) + ' at ' + hm(t) + ' (' + (h < 1 ? 'under 1 h' : h < 48 ? h + ' h' : Math.floor(age) + ' days') + ' ago)<span class="pill ' + cls + '">' + lbl + '</span>';
+    const age = (Date.now() - t) / 86400000, h = Math.round(age * 24), cls = age < 1.5 ? 'ok' : age < 4 ? 'mid' : 'old', lbl = age < 1.5 ? L('fresh', '新') : age < 4 ? L('OK', '正常') : L('old', '过旧');
+    return ZH ? esc(dateStr(t)) + ' ' + hm(t) + '（' + (h < 1 ? '不到 1 小时' : h < 48 ? h + ' 小时' : Math.floor(age) + ' 天') + '前）<span class="pill ' + cls + '">' + lbl + '</span>'
+      : esc(dateStr(t)) + ' at ' + hm(t) + ' (' + (h < 1 ? 'under 1 h' : h < 48 ? h + ' h' : Math.floor(age) + ' days') + ' ago)<span class="pill ' + cls + '">' + lbl + '</span>';
   }
   function parsePolar(txt) {
     const nl = txt.indexOf('\n'), head = txt.slice(0, nl), body = txt.slice(nl + 1).trim(), m = /T0=(\S+)/.exec(head);
@@ -681,24 +698,27 @@
   function renderDataInfo() {
     const dl = $('datainfo'); dl.innerHTML = '';
     const add = (k, html) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.innerHTML = html; dl.append(dt, dd); };
-    if (fetched) add('Bright', ageHtml(fetched));
-    if (slFetched && starlinkState !== 'none') add('Starlink', ageHtml(slFetched));
+    if (fetched) add(L('Bright', '亮目标'), ageHtml(fetched));
+    if (slFetched && starlinkState !== 'none') add(L('Starlink', '星链'), ageHtml(slFetched));
     const nb = OBJ.filter(o => o.kind !== 2).length, ns = OBJ.filter(o => o.kind === 2).length;
-    add('Count', nb + ' bright objects and space stations' + (ns ? ' · ' + ns.toLocaleString('en-GB') + ' Starlink' : ''));
-    if (starlinkState === 'ok') add('Selection', slInfo && slInfo.format === 'polar'
-      ? (LAT >= 62 ? 'Starlink in orbits with 70° and 97° inclination, the ones that pass high over ' + PLACE.name + '. Starlink at 43° and 53° inclination never gets more than a few degrees above the southern horizon from here.'
-        : 'Only Starlink in orbits with 70° and 97° inclination is loaded (the ones that pass high over northern Norway), so many of the Starlink satellites over ' + PLACE.name + ' are not shown.')
-      : 'Starlink with more than 50° inclination. The ones at 43° inclination never rise above the horizon in ' + PLACE.name + '.');
-    else if (starlinkState === 'loading') add('Selection', 'Loading Starlink …');
-    else if (starlinkState === 'old') add('Selection', 'The Starlink data is too old to give correct positions, so the layer is off until the next update.');
-    else add('Selection', 'Starlink data is not available right now.');
+    add(L('Count', '数量'), nb + L(' bright objects and space stations', ' 个亮目标和空间站') + (ns ? ' · ' + ns.toLocaleString('en-GB') + L(' Starlink', ' 颗星链') : ''));
+    const SEL = L('Selection', '范围');
+    if (starlinkState === 'ok') add(SEL, slInfo && slInfo.format === 'polar'
+      ? (LAT >= 62 ? L('Starlink in orbits with 70° and 97° inclination, the ones that pass high over ' + PLACE.name + '. Starlink at 43° and 53° inclination never gets more than a few degrees above the southern horizon from here.',
+          '倾角 70° 和 97° 轨道上的星链卫星，也就是从' + PLACE.name + '高空经过的那些。倾角 43° 和 53° 的星链在这里离南方地平线最多只有几度。')
+        : L('Only Starlink in orbits with 70° and 97° inclination is loaded (the ones that pass high over northern Norway), so many of the Starlink satellites over ' + PLACE.name + ' are not shown.',
+          '只加载了倾角 70° 和 97° 轨道上的星链（从挪威北部高空经过的那些），所以' + PLACE.name + '上空的许多星链卫星没有显示。'))
+      : L('Starlink with more than 50° inclination. The ones at 43° inclination never rise above the horizon in ' + PLACE.name + '.', '倾角大于 50° 的星链。倾角 43° 的星链在' + PLACE.name + '永远不会升到地平线以上。'));
+    else if (starlinkState === 'loading') add(SEL, L('Loading Starlink …', '正在加载星链 …'));
+    else if (starlinkState === 'old') add(SEL, L('The Starlink data is too old to give correct positions, so the layer is off until the next update.', '星链数据太旧，无法给出正确位置，因此该图层在下次更新前关闭。'));
+    else add(SEL, L('Starlink data is not available right now.', '星链数据暂时不可用。'));
   }
   function renderChips() {
     const c = [0, 0, 0]; OBJ.forEach(o => c[o.kind]++);
     $('c-station').textContent = c[0]; $('c-bright').textContent = c[1];
     const sb = $('l-starlink');
     if (starlinkState === 'ok') { $('c-starlink').textContent = c[2].toLocaleString('en-GB'); sb.disabled = false; }
-    else { $('c-starlink').textContent = starlinkState === 'loading' ? '…' : starlinkState === 'old' ? 'data too old' : 'not loaded'; sb.disabled = true; sb.setAttribute('aria-pressed', 'false'); }
+    else { $('c-starlink').textContent = starlinkState === 'loading' ? '…' : starlinkState === 'old' ? L('data too old', '数据过旧') : L('not loaded', '未加载'); sb.disabled = true; sb.setAttribute('aria-pressed', 'false'); }
   }
 
   // ---------- controls ----------
@@ -878,20 +898,20 @@
   function renderAurora() {
     const now = Date.now(), sun = sunAt(now), cl = cloudAt(now), pN = AUR.pN, pSky = AUR.pSky;
     const vEl = $('a-verdict'), sum = $('a-summary');
-    let verdict = 'Loading …', cls = 'wait', text = '';
+    let verdict = L('Loading …', '加载中 …'), cls = 'wait', text = '';
     const score = pN == null ? null : Math.max(pN, (pSky || 0) * 0.8);
-    if (AUR.err.ov && pN == null) { verdict = 'No data'; cls = 'low'; text = 'Could not fetch the northern lights forecast from NOAA right now. The page will try again in a few minutes.'; }
+    if (AUR.err.ov && pN == null) { verdict = L('No data', '无数据'); cls = 'low'; text = L('Could not fetch the northern lights forecast from NOAA right now. The page will try again in a few minutes.', '目前无法从 NOAA 获取极光预报。页面会在几分钟后重试。'); }
     else if (score != null) {
       const dir = AUR.skyDir != null ? dirName(AUR.skyDir) : null;
-      const where = pSky > pN + 3 && dir ? ' Strongest to the ' + dir + ', up to ' + Math.round(pSky) + ' % there.' : '';
-      if (sun.el > -8) { verdict = 'Too bright'; cls = 'low'; text = 'The sky is too bright for northern lights right now.' + (nextDark ? ' It gets dark around ' + hm(nextDark) + '.' : '') + ' The forecast below shows the activity.'; }
-      else if (cl && cl.c >= 85) { verdict = 'Cloudy'; cls = 'cloud'; text = 'There is ' + Math.round(cl.c) + ' % cloud cover over ' + PLACE.name + ', so the northern lights will be hard to see even though activity is ' + (score >= 12 ? 'good' : 'low') + '.'; }
+      const where = pSky > pN + 3 && dir ? L(' Strongest to the ' + dir + ', up to ' + Math.round(pSky) + ' % there.', dir + '方最强，那里可达 ' + Math.round(pSky) + '%。') : '';
+      if (sun.el > -8) { verdict = L('Too bright', '太亮'); cls = 'low'; text = L('The sky is too bright for northern lights right now.', '现在天太亮，看不到极光。') + (nextDark ? L(' It gets dark around ' + hm(nextDark) + '.', '大约 ' + hm(nextDark) + ' 天黑。') : '') + L(' The forecast below shows the activity.', '下面的预报显示了活动情况。'); }
+      else if (cl && cl.c >= 85) { verdict = L('Cloudy', '多云'); cls = 'cloud'; text = L('There is ' + Math.round(cl.c) + ' % cloud cover over ' + PLACE.name + ', so the northern lights will be hard to see even though activity is ' + (score >= 12 ? 'good' : 'low') + '.', PLACE.name + '上空云量 ' + Math.round(cl.c) + '%，所以即使极光活动' + (score >= 12 ? '较强' : '较弱') + '，也很难看到。'); }
       else {
-        if (score >= 30) { verdict = 'Good chances'; cls = 'good'; } else if (score >= 12) { verdict = 'Possible'; cls = 'mid'; } else if (score >= 5) { verdict = 'Slight chance'; cls = 'mid'; } else { verdict = 'Unlikely'; cls = 'low'; }
-        text = (score >= 12 ? 'Go out and look, ideally away from street lights.' : score >= 5 ? 'Faint northern lights may show low in the sky, best seen from a dark spot.' : 'Little activity right now.') + where + (cl && cl.c >= 50 ? ' It is partly cloudy (' + Math.round(cl.c) + ' %).' : '');
+        if (score >= 30) { verdict = L('Good chances', '机会很大'); cls = 'good'; } else if (score >= 12) { verdict = L('Possible', '有可能'); cls = 'mid'; } else if (score >= 5) { verdict = L('Slight chance', '机会较小'); cls = 'mid'; } else { verdict = L('Unlikely', '不太可能'); cls = 'low'; }
+        text = (score >= 12 ? L('Go out and look, ideally away from street lights.', '出去看看吧，最好远离路灯。') : score >= 5 ? L('Faint northern lights may show low in the sky, best seen from a dark spot.', '天空低处可能出现微弱的极光，最好在黑暗的地方观看。') : L('Little activity right now.', '目前极光活动很少。')) + where + (cl && cl.c >= 50 ? L(' It is partly cloudy (' + Math.round(cl.c) + ' %).', '局部多云（' + Math.round(cl.c) + '%）。') : '');
       }
     }
-    vEl.textContent = verdict; vEl.className = 'verdict ' + cls; sum.textContent = text || 'Loading data from NOAA and the Norwegian Meteorological Institute …';
+    vEl.textContent = verdict; vEl.className = 'verdict ' + cls; sum.textContent = text || L('Loading data from NOAA and the Norwegian Meteorological Institute …', '正在从 NOAA 和挪威气象研究所加载数据 …');
     $('a-prob').textContent = pN == null ? '–' : Math.round(pN) + ' %';
     $('a-kp').textContent = AUR.kp == null ? '–' : num(AUR.kp, 1); $('a-kp').className = AUR.kp == null ? '' : 'kp-' + kpCls(AUR.kp);
     $('a-cloud').textContent = cl ? Math.round(cl.c) + ' %' : '–';
@@ -899,23 +919,23 @@
     // solar wind
     const sw = $('a-wind'); sw.innerHTML = '';
     const add = (k, html) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.innerHTML = html; sw.append(dt, dd); };
-    if (AUR.bz != null) add('Bz', '<b class="' + (AUR.bz <= -5 ? 'good' : AUR.bz < 0 ? 'mid' : '') + '">' + num(AUR.bz, 0) + ' nT</b> · ' + (AUR.bz < 0 ? 'pointing south, which helps the northern lights' : 'pointing north, which dampens the northern lights'));
-    if (AUR.speed != null) add('Solar wind', '<b class="' + (AUR.speed >= 550 ? 'good' : AUR.speed >= 450 ? 'mid' : '') + '">' + Math.round(AUR.speed) + ' km/s</b> · ' + (AUR.speed >= 550 ? 'fast' : AUR.speed >= 450 ? 'fairly fast' : 'calm'));
-    if (AUR.bz == null && AUR.speed == null) add('Solar wind', AUR.err.sw ? 'Not available right now' : 'Loading …');
+    if (AUR.bz != null) add('Bz', '<b class="' + (AUR.bz <= -5 ? 'good' : AUR.bz < 0 ? 'mid' : '') + '">' + num(AUR.bz, 0) + ' nT</b> · ' + (AUR.bz < 0 ? L('pointing south, which helps the northern lights', '指向南，有利于极光') : L('pointing north, which dampens the northern lights', '指向北，会抑制极光')));
+    if (AUR.speed != null) add(L('Solar wind', '太阳风'), '<b class="' + (AUR.speed >= 550 ? 'good' : AUR.speed >= 450 ? 'mid' : '') + '">' + Math.round(AUR.speed) + L(' km/s', ' 公里/秒') + '</b> · ' + (AUR.speed >= 550 ? L('fast', '快') : AUR.speed >= 450 ? L('fairly fast', '较快') : L('calm', '平静')));
+    if (AUR.bz == null && AUR.speed == null) add(L('Solar wind', '太阳风'), AUR.err.sw ? L('Not available right now', '暂时不可用') : L('Loading …', '加载中 …'));
     // Kp forecast: next 8 three-hour blocks
     const kb = $('a-kpfc'); kb.innerHTML = '';
     const blocks = AUR.kpfc.filter(r => r.t + 3 * 3600000 > now).slice(0, 8);
     blocks.forEach(r => { const d = document.createElement('div'); d.className = 'kb ' + kpCls(r.kp) + (r.t <= now ? ' cur' : '');
-      d.innerHTML = '<i style="height:' + Math.max(6, r.kp / 9 * 100).toFixed(0) + '%"></i><b>' + num(r.kp, 0) + '</b><span>' + oslo(r.t).h + '</span>'; d.title = 'Kp ' + num(r.kp, 1) + ' from ' + hm(r.t); kb.appendChild(d); });
-    if (!blocks.length) kb.innerHTML = '<p class="m">' + (AUR.err.fc ? 'The Kp forecast is not available right now.' : 'Loading Kp forecast …') + '</p>';
+      d.innerHTML = '<i style="height:' + Math.max(6, r.kp / 9 * 100).toFixed(0) + '%"></i><b>' + num(r.kp, 0) + '</b><span>' + oslo(r.t).h + '</span>'; d.title = L('Kp ' + num(r.kp, 1) + ' from ' + hm(r.t), hm(r.t) + ' 起 Kp ' + num(r.kp, 1)); kb.appendChild(d); });
+    if (!blocks.length) kb.innerHTML = '<p class="m">' + (AUR.err.fc ? L('The Kp forecast is not available right now.', 'Kp 预报暂时不可用。') : L('Loading Kp forecast …', '正在加载 Kp 预报 …')) + '</p>';
     // clouds next 12 h
     const cb = $('a-clouds'); cb.innerHTML = '';
     const hrs = AUR.met.filter(s => s.t >= now - 30 * 60000).slice(0, 12);
-    hrs.forEach((s, i) => { const d = document.createElement('div'); d.className = 'cb'; d.title = Math.round(s.c) + ' % cloud cover at ' + hm(s.t);
+    hrs.forEach((s, i) => { const d = document.createElement('div'); d.className = 'cb'; d.title = L(Math.round(s.c) + ' % cloud cover at ' + hm(s.t), hm(s.t) + ' 云量 ' + Math.round(s.c) + '%');
       d.innerHTML = '<i style="height:' + Math.max(4, s.c).toFixed(0) + '%"></i><span>' + (i % 3 === 0 ? oslo(s.t).h : '') + '</span>'; cb.appendChild(d); });
-    if (!hrs.length) cb.innerHTML = '<p class="m">' + (AUR.err.met ? 'The cloud forecast is not available right now.' : 'Loading cloud forecast …') + '</p>';
+    if (!hrs.length) cb.innerHTML = '<p class="m">' + (AUR.err.met ? L('The cloud forecast is not available right now.', '云量预报暂时不可用。') : L('Loading cloud forecast …', '正在加载云量预报 …')) + '</p>';
     const upd = [AUR.ovObs, AUR.kpTime].filter(Boolean);
-    $('a-updated').textContent = upd.length ? 'Northern lights data from ' + hm(Math.max(...upd)) + '.' : '';
+    $('a-updated').textContent = upd.length ? L('Northern lights data from ' + hm(Math.max(...upd)) + '.', '极光数据时间 ' + hm(Math.max(...upd)) + '。') : '';
   }
   $('l-aurora').addEventListener('click', e => { showAurora = !showAurora; e.currentTarget.setAttribute('aria-pressed', String(showAurora)); });
   function startAurora() {
@@ -928,9 +948,10 @@
   // ---------- place switch ----------
   function applyPlaceText() {
     document.querySelectorAll('.pname').forEach(e => { e.textContent = PLACE.name; });
-    $('pcoords').textContent = num(Math.abs(LAT), 2) + '° ' + (LAT >= 0 ? 'N' : 'S') + ' ' + num(Math.abs(LON), 2) + '° ' + (LON >= 0 ? 'E' : 'W');
-    document.title = PLACE.key === 'me' && !PLACE.named ? 'Satellite Watch' : 'Satellite Watch ' + PLACE.name;
-    $('cv').setAttribute('aria-label', '3D view of satellites over ' + PLACE.name);
+    $('pcoords').textContent = ZH ? (LAT >= 0 ? '北纬 ' : '南纬 ') + num(Math.abs(LAT), 2) + '° ' + (LON >= 0 ? '东经 ' : '西经 ') + num(Math.abs(LON), 2) + '°'
+      : num(Math.abs(LAT), 2) + '° ' + (LAT >= 0 ? 'N' : 'S') + ' ' + num(Math.abs(LON), 2) + '° ' + (LON >= 0 ? 'E' : 'W');
+    document.title = ZH ? (PLACE.key === 'me' && !PLACE.named ? '卫星观测' : PLACE.name + ' 卫星观测') : PLACE.key === 'me' && !PLACE.named ? 'Satellite Watch' : 'Satellite Watch ' + PLACE.name;
+    $('cv').setAttribute('aria-label', L('3D view of satellites over ' + PLACE.name, PLACE.name + '上空卫星的 3D 视图'));
     document.querySelectorAll('.place button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === PLACE.key)));
   }
   function setPlace(key, again) {
@@ -944,28 +965,28 @@
     select(-1); force = true; lastScan = -1e15;
     applyPlaceText(); paintRail(); renderDataInfo();
     if (AUR.grid) buildAurora(); AUR.met = []; renderAurora(); loadMet();
-    predGen++; $('rows').innerHTML = '<div class="empty">Calculating passes …</div>'; PASSES = [];
+    predGen++; $('rows').innerHTML = '<div class="empty">' + L('Calculating passes …', '正在计算过境 …') + '</div>'; PASSES = [];
     predictPasses().then(predictStations);
   }
   // my location: browser geolocation (rounded to ~100 m), named with OpenStreetMap Nominatim; kept in this browser only
   const geoBtn = document.querySelector('.place button[data-place="me"]'), geoMsg = $('geomsg');
   async function placeName(lat, lon) {
-    try { const j = await getJSON('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat=' + lat + '&lon=' + lon); const a = j.address || {};
+    try { const j = await getJSON('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=' + L('en', 'zh-CN') + '&lat=' + lat + '&lon=' + lon); const a = j.address || {};
       return a.city || a.town || a.village || a.municipality || a.hamlet || a.county || a.state || null; } catch (e) { return null; }
   }
   let locating = false;
   function locate() {
     if (locating) return;
-    if (!navigator.geolocation) { geoMsg.textContent = 'Location is not available in this browser.'; return; }
+    if (!navigator.geolocation) { geoMsg.textContent = L('Location is not available in this browser.', '此浏览器不支持定位。'); return; }
     locating = true; geoBtn.setAttribute('aria-busy', 'true'); geoMsg.textContent = '';
     const done = () => { locating = false; geoBtn.removeAttribute('aria-busy'); };
     navigator.geolocation.getCurrentPosition(async pos => {
       const c = pos.coords, lat = +c.latitude.toFixed(3), lon = +c.longitude.toFixed(3), h = c.altitude != null && isFinite(c.altitude) ? Math.max(0, Math.min(9, c.altitude / 1000)) : 0.02;
       const nm = await Promise.race([placeName(lat, lon), new Promise(r => setTimeout(() => r(null), 4000))]);
-      const me = { key: 'me', name: nm || 'your location', named: !!nm, lat, lon, h }; PLACES.me = me;
+      const me = { key: 'me', name: nm || L('your location', '你的位置'), named: !!nm, lat, lon, h }; PLACES.me = me;
       try { localStorage.setItem('sv-me', JSON.stringify(me)); } catch (e) {}
       done(); setPlace('me', true);
-    }, err => { done(); geoMsg.textContent = err.code === 1 ? 'Location access was denied. Allow it for this site in your browser settings to use your location.' : 'Could not find your location. Please try again.'; },
+    }, err => { done(); geoMsg.textContent = err.code === 1 ? L('Location access was denied. Allow it for this site in your browser settings to use your location.', '定位权限被拒绝。请在浏览器设置中允许此网站访问位置。') : L('Could not find your location. Please try again.', '无法找到你的位置，请重试。'); },
     { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 });
   }
   document.querySelectorAll('.place button').forEach(b => b.addEventListener('click', () => { if (b.dataset.place === 'me') locate(); else { geoMsg.textContent = ''; setPlace(b.dataset.place); } }));
@@ -977,7 +998,7 @@
   const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   function setFull(on) {
     stage.classList.toggle('full', on); document.documentElement.classList.toggle('fs-lock', on);
-    fsBtn.setAttribute('aria-pressed', String(on)); fsBtn.setAttribute('aria-label', on ? 'Close full screen' : 'Full screen'); fsBtn.title = on ? 'Close full screen' : 'Full screen';
+    fsBtn.setAttribute('aria-pressed', String(on)); const fsT = on ? L('Close full screen', '退出全屏') : L('Full screen', '全屏'); fsBtn.setAttribute('aria-label', fsT); fsBtn.title = fsT;
     resize();
   }
   function openFull() {
@@ -1017,7 +1038,7 @@
     fetched = vInfo.fetched ? Date.parse(vInfo.fetched) : null;
     slInfo = meta.starlink || null; slFetched = slInfo && slInfo.fetched ? Date.parse(slInfo.fetched) : null;
     let vis;
-    try { vis = await getText(vInfo.file || 'visual.csv'); } catch (e) { $('loading').textContent = 'Could not find the orbit data. Please reload the page.'; return; }
+    try { vis = await getText(vInfo.file || 'visual.csv'); } catch (e) { $('loading').textContent = L('Could not find the orbit data. Please reload the page.', '找不到轨道数据，请重新加载页面。'); return; }
     addObjects(O.parseCSV(vis), 'visual'); buildBuffers();
     $('loading').hidden = true; renderChips(); renderDataInfo();
     requestAnimationFrame(frame);
@@ -1039,7 +1060,7 @@
   if (alertBtn && alertBridge) {
     alertBtn.hidden = false;
     alertBtn.addEventListener('click', () => alertBridge.postMessage({ action: 'open', place: PLACE.key }));
-    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); if (st.text) $('a-alert-state').textContent = st.text; };
+    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); const tx = ZH ? (st.on ? '已开启' : '纳尔维克或特罗姆瑟出现北极光时通知你') : st.text; if (tx) $('a-alert-state').textContent = tx; };
     alertBridge.postMessage({ action: 'state' });
   }
   boot();

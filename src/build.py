@@ -2,7 +2,7 @@ import re
 import os
 S=os.path.dirname(os.path.abspath(__file__))+'/'; G=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
 t=open(S+'template.html').read()
-t=t.replace('/*ORBJS*/',open(S+'orb.js').read()).replace('/*APPJS*/',open(S+'app.js').read())
+t=t.replace('/*I18NJS*/',open(S+'i18n.js').read()).replace('/*ORBJS*/',open(S+'orb.js').read()).replace('/*APPJS*/',open(S+'app.js').read())
 i=t.index('</style>')+len('</style>'); head, body = t[:i], t[i:]
 for drop in ['<title>Satellite Watch Narvik</title>\n','<meta name="claude:viewport-fit-sides" content="cover">\n']: head=head.replace(drop,'')
 head=re.sub(r'<meta name="description"[^>]*>\n','',head)

@@ -38,9 +38,9 @@ img{max-width:100%}
   --warn: #ffb35c;       /* stale data */
   --aurora: #6dfbb0;     /* northern lights */
   --rail: var(--line);   /* timeline rail, set by script */
-  --f-display: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", sans-serif;
-  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --f-display: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", monospace;
 }
 html, body { background: var(--ink); color: var(--frost); }
 body {
@@ -110,6 +110,7 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 .scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .scale span:first-child { transform: none; }
 .scale span:last-child { transform: translateX(-100%); }
+@media (max-width: 600px) { .scale span:first-child { display: none; } } /* "−1 h" collides with "Now" on phones */
 input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; margin: 0; }
 input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--rail); }
 input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--rail); }
@@ -220,36 +221,52 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 .place button[aria-pressed="true"] { background: var(--sun); color: var(--ink); }
 .place button:hover:not([aria-pressed="true"]) { color: var(--frost); }
 @media (prefers-reduced-motion: reduce) { .livepill i { animation: none; } }
+/* language switcher */
+.tools { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lang { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+.lang button { font: 600 12.5px var(--f-body); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 6px 11px 6px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+.lang button[aria-pressed="true"] { background: var(--frost); color: var(--ink); }
+.lang button:hover:not([aria-pressed="true"]) { color: var(--frost); }
+.lang svg { width: 20px; height: 13px; border-radius: 2.5px; flex: none; display: block; box-shadow: 0 0 0 1px rgba(255,255,255,.12); }
+/* Chinese: no letter-spacing tricks meant for Latin capitals */
+html.lang-zh .eyebrow, html.lang-zh h1, html.lang-zh .livepill, html.lang-zh .verdict, html.lang-zh .mini h3 { letter-spacing: 0; }
+html.lang-zh h1 { line-height: 1.1; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="toprow">
-      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68.44° N 17.43° E</span> · the sky in real time</div>
-      <div class="place" role="group" aria-label="Choose place">
-        <button type="button" data-place="me" aria-pressed="false" title="Use my location"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>My location</button>
-        <button type="button" data-place="narvik" aria-pressed="true">Narvik</button>
-        <button type="button" data-place="tromso" aria-pressed="false">Tromsø</button>
+      <div class="eyebrow"><span class="pname">Narvik</span> <span id="pcoords">68.44° N 17.43° E</span><span data-i18n="eyebrow"> · the sky in real time</span></div>
+      <div class="tools">
+      <div class="lang" role="group" aria-label="Language" data-i18n-aria="langGroup">
+        <button type="button" data-lang="en" aria-pressed="true" lang="en"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="fl-uk-s"><path d="M0,0v30h60V0z"/></clipPath><clipPath id="fl-uk-t"><path d="M30,15h30v15zv15H0zH0V0zV0h30z"/></clipPath><g clip-path="url(#fl-uk-s)"><path d="M0,0v30h60V0z" fill="#012169"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 60,30M60,0 0,30" clip-path="url(#fl-uk-t)" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></g></svg>EN</button>
+        <button type="button" data-lang="zh" aria-pressed="false" lang="zh-CN"><svg viewBox="0 0 30 20" aria-hidden="true"><defs><path id="fl-cn-s" d="M0,-1 .588,.809-.951-.309H.951L-.588,.809z" fill="#FFDE00"/></defs><rect width="30" height="20" fill="#EE1C25"/><use href="#fl-cn-s" transform="translate(5,5) scale(3)"/><use href="#fl-cn-s" transform="translate(10,2) rotate(23.04)"/><use href="#fl-cn-s" transform="translate(12,4) rotate(45.87)"/><use href="#fl-cn-s" transform="translate(12,7) rotate(69.95)"/><use href="#fl-cn-s" transform="translate(10,9) rotate(20.66)"/></svg>中文</button>
+      </div>
+      <div class="place" role="group" aria-label="Choose place" data-i18n-aria="placeGroup">
+        <button type="button" data-place="me" aria-pressed="false" title="Use my location" data-i18n-title="myLocTitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span data-i18n="myLoc">My location</span></button>
+        <button type="button" data-place="narvik" aria-pressed="true" data-i18n="narvik">Narvik</button>
+        <button type="button" data-place="tromso" aria-pressed="false" data-i18n="tromso">Tromsø</button>
+      </div>
       </div>
     </div>
     <p class="geomsg" id="geomsg" role="status" aria-live="polite"></p>
-    <h1><span>Satellites over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt">Live</span></span></h1>
-    <p class="lede">The dots of light are satellites and rocket bodies in sunlight over the town right now, and the green glow is the NOAA northern lights forecast. Drag to turn the view, pinch or scroll to zoom, and tap a dot or a row in the list. Use “My location” for the sky where you are, and the compass in “Look up” to hold your phone flat and see the sky above you.</p>
+    <h1><span data-i18n="h1">Satellites over <em class="pname">Narvik</em></span><span class="livepill" id="livepill"><i></i><span id="livetxt" data-i18n="live">Live</span></span></h1>
+    <p class="lede" data-i18n="lede">The dots of light are satellites and rocket bodies in sunlight over the town right now, and the green glow is the NOAA northern lights forecast. Drag to turn the view, pinch or scroll to zoom, and tap a dot or a row in the list. Use “My location” for the sky where you are, and the compass in “Look up” to hold your phone flat and see the sky above you.</p>
   </header>
 
   <div class="main">
-    <section class="stagecol" aria-label="3D view">
+    <section class="stagecol" aria-label="3D view" data-i18n-aria="view3d">
       <div class="stage" id="stage">
         <canvas id="cv" aria-label="3D view of satellites"></canvas>
-        <div class="loading" id="loading">Loading orbit data …</div>
-        <div class="modes" role="group" aria-label="View">
-          <button type="button" id="m-dome" aria-pressed="true">Sky</button>
-          <button type="button" id="m-look" aria-pressed="false">Look up</button>
-          <button type="button" id="m-globe" aria-pressed="false">Earth</button>
+        <div class="loading" id="loading" data-i18n="loading">Loading orbit data …</div>
+        <div class="modes" role="group" aria-label="View" data-i18n-aria="viewGroup">
+          <button type="button" id="m-dome" aria-pressed="true" data-i18n="sky">Sky</button>
+          <button type="button" id="m-look" aria-pressed="false" data-i18n="look">Look up</button>
+          <button type="button" id="m-globe" aria-pressed="false" data-i18n="earth">Earth</button>
         </div>
         <div class="lookbar" id="lookbar" hidden>
-          <button type="button" class="cmpbtn" id="cmpbtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" stroke-width="1.4"/></svg>Compass</button>
+          <button type="button" class="cmpbtn" id="cmpbtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" stroke-width="1.4"/></svg><span data-i18n="compass">Compass</span></button>
           <span class="heading" id="heading"></span>
           <span class="lookmsg" id="lookmsg" role="status"></span>
         </div>
@@ -262,74 +279,166 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         </div>
         <div class="tag" id="tag" hidden></div>
         <div class="banner" id="banner" hidden><span id="bannertxt"></span></div>
-        <button type="button" class="fsbtn" id="fsbtn" aria-label="Full screen" title="Full screen" aria-pressed="false">
+        <button type="button" class="fsbtn" id="fsbtn" aria-label="Full screen" title="Full screen" aria-pressed="false" data-i18n-aria="fullscreen" data-i18n-title="fullscreen">
           <svg class="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
           <svg class="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </div>
 
       <div class="timeline">
-        <button type="button" class="ctl" id="live" aria-pressed="true"><i></i>Live</button>
+        <button type="button" class="ctl" id="live" aria-pressed="true"><i></i><span data-i18n="live">Live</span></button>
         <div class="track">
-          <input type="range" id="time" min="-60" max="720" step="1" value="0" aria-label="Time from now in minutes">
-          <div class="scale" id="scale"><span style="left:0%">−1 h</span><span id="sc0">Now</span><span id="sc3">+3 h</span><span id="sc6">+6 h</span><span id="sc9">+9 h</span><span style="left:100%">+12 h</span></div>
+          <input type="range" id="time" min="-60" max="720" step="1" value="0" aria-label="Time from now in minutes" data-i18n-aria="timeRange">
+          <div class="scale" id="scale"><span style="left:0%">−1 h</span><span id="sc0" data-i18n="now">Now</span><span id="sc3">+3 h</span><span id="sc6">+6 h</span><span id="sc9">+9 h</span><span style="left:100%">+12 h</span></div>
         </div>
-        <div class="speeds" role="group" aria-label="Speed">
+        <div class="speeds" role="group" aria-label="Speed" data-i18n-aria="speedGroup">
           <button type="button" data-s="1" aria-pressed="true">1×</button>
           <button type="button" data-s="60" aria-pressed="false">60×</button>
           <button type="button" data-s="600" aria-pressed="false">600×</button>
         </div>
       </div>
 
-      <div class="layers" role="group" aria-label="Layers">
-        <button type="button" class="chip" id="l-station" aria-pressed="true"><i style="background:var(--station)"></i>Space stations <small id="c-station">–</small></button>
-        <button type="button" class="chip" id="l-bright" aria-pressed="true"><i style="background:var(--sun)"></i>Bright objects <small id="c-bright">–</small></button>
-        <button type="button" class="chip" id="l-starlink" aria-pressed="true"><i style="background:var(--ice)"></i>Starlink <small id="c-starlink">–</small></button>
-        <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i>Northern lights <small id="c-aurora">–</small></button>
-        <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i>Show those in Earth's shadow</button>
+      <div class="layers" role="group" aria-label="Layers" data-i18n-aria="layersGroup">
+        <button type="button" class="chip" id="l-station" aria-pressed="true"><i style="background:var(--station)"></i><span data-i18n="stations">Space stations</span> <small id="c-station">–</small></button>
+        <button type="button" class="chip" id="l-bright" aria-pressed="true"><i style="background:var(--sun)"></i><span data-i18n="bright">Bright objects</span> <small id="c-bright">–</small></button>
+        <button type="button" class="chip" id="l-starlink" aria-pressed="true"><i style="background:var(--ice)"></i><span data-i18n="starlink">Starlink</span> <small id="c-starlink">–</small></button>
+        <button type="button" class="chip" id="l-aurora" aria-pressed="true"><i style="background:var(--aurora)"></i><span data-i18n="aurora">Northern lights</span> <small id="c-aurora">–</small></button>
+        <button type="button" class="chip" id="l-shade" aria-pressed="false"><i style="background:var(--shade)"></i><span data-i18n="shade">Show those in Earth's shadow</span></button>
       </div>
-      <p class="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The pulsing green ring marks the closest sunlit satellite in view, preferring one that is coming closer. The stars are included for orientation.</p>
+      <p class="method" data-i18n="method">Positions are computed in the browser from <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> orbit data, using a simplified SGP4 model. With fresh data they are accurate to about one degree on the sky; accuracy drops as the data gets older. An object counts as visible when it is in sunlight, at least 10° above the horizon, and the sun is more than 6° below the horizon at the chosen place. “Bright objects” is CelesTrak’s list of the roughly 150 brightest satellites and rocket bodies. The Starlink layer shows the satellites in the orbits that pass high over northern Norway. The orbit data is refreshed automatically twice a day, and the “Orbit data” box shows when it was last fetched. The 3D northern lights are NOAA’s OVATION forecast for the next 30–60 minutes, drawn at 100–250 km altitude, and only shown when the timeline is close to now. The pulsing green ring marks the closest sunlit satellite in view, preferring one that is coming closer. The stars are included for orientation.</p>
     </section>
 
     <aside>
       <section class="card aur" aria-live="polite">
-        <div class="aurhead"><h2>Northern lights now</h2><span class="verdict wait" id="a-verdict">Loading …</span></div>
-        <p id="a-summary">Loading data from NOAA and the Norwegian Meteorological Institute …</p>
+        <div class="aurhead"><h2 data-i18n="auroraNow">Northern lights now</h2><span class="verdict wait" id="a-verdict" data-i18n="loadingShort">Loading …</span></div>
+        <p id="a-summary" data-i18n="auroraLoading">Loading data from NOAA and the Norwegian Meteorological Institute …</p>
         <div class="astats">
-          <div class="stat"><b id="a-prob">–</b><span>probability over <span class="pname">Narvik</span></span></div>
-          <div class="stat"><b id="a-kp">–</b><span>Kp index now</span></div>
-          <div class="stat"><b id="a-cloud">–</b><span>cloud cover in <span class="pname">Narvik</span></span></div>
+          <div class="stat"><b id="a-prob">–</b><span data-i18n="probOver">probability over <span class="pname">Narvik</span></span></div>
+          <div class="stat"><b id="a-kp">–</b><span data-i18n="kpNow">Kp index now</span></div>
+          <div class="stat"><b id="a-cloud">–</b><span data-i18n="cloudIn">cloud cover in <span class="pname">Narvik</span></span></div>
         </div>
         <dl class="kv" id="a-wind"></dl>
-        <div class="mini"><h3>Kp forecast, next 24 hours</h3><div class="bars" id="a-kpfc"></div></div>
-        <div class="mini"><h3>Cloud cover, next 12 hours</h3><div class="bars" id="a-clouds"></div></div>
+        <div class="mini"><h3 data-i18n="kpFc">Kp forecast, next 24 hours</h3><div class="bars" id="a-kpfc"></div></div>
+        <div class="mini"><h3 data-i18n="cloudFc">Cloud cover, next 12 hours</h3><div class="bars" id="a-clouds"></div></div>
         <button type="button" class="alertbtn" id="a-alert" hidden aria-haspopup="dialog">
           <svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><circle class="dot" cx="18.5" cy="5.5" r="3.2" fill="currentColor" stroke="var(--panel)" stroke-width="1.5"/></svg>
-          <span><b>Northern lights alerts</b><small id="a-alert-state">Get a notification when they show up over Narvik or Tromsø</small></span>
+          <span><b data-i18n="alertTitle">Northern lights alerts</b><small id="a-alert-state" data-i18n="alertState">Get a notification when they show up over Narvik or Tromsø</small></span>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
-        <p class="src"><span id="a-updated"></span> Sources: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION forecast, Kp, solar wind) and <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (cloud cover, CC BY 4.0). Updated every few minutes.</p>
+        <p class="src"><span id="a-updated"></span> <span data-i18n="auroraSrc">Sources: <a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a> (OVATION forecast, Kp, solar wind) and <a href="https://api.met.no" target="_blank" rel="noopener">MET Norway</a> (cloud cover, CC BY 4.0). Updated every few minutes.</span></p>
       </section>
       <section class="card">
-        <h2>Next bright passes</h2>
-        <p class="m">The next 12 hours, when the sky is dark enough. Time of highest point, max altitude and direction. Tap to jump there.</p>
+        <h2 data-i18n="passes">Next bright passes</h2>
+        <p class="m" data-i18n="passesInfo">The next 12 hours, when the sky is dark enough. Time of highest point, max altitude and direction. Tap to jump there.</p>
         <div class="list">
-          <div class="listhead"><span>Time</span><span>Object</span><span style="text-align:right">Max</span><span style="text-align:right">Dir.</span></div>
-          <div class="scroller" id="rows"><div class="empty">Calculating passes …</div></div>
+          <div class="listhead"><span data-i18n="colTime">Time</span><span data-i18n="colObject">Object</span><span style="text-align:right" data-i18n="colMax">Max</span><span style="text-align:right" data-i18n="colDir">Dir.</span></div>
+          <div class="scroller" id="rows"><div class="empty" data-i18n="calcPasses">Calculating passes …</div></div>
         </div>
       </section>
       <section class="card">
-        <h2>Space stations</h2>
-        <dl class="kv" id="stations"><dt>ISS</dt><dd>Calculating …</dd><dt>Tiangong</dt><dd>Calculating …</dd></dl>
+        <h2 data-i18n="spaceStations">Space stations</h2>
+        <dl class="kv" id="stations"><dt data-i18n="iss">ISS</dt><dd data-i18n="calculating">Calculating …</dd><dt data-i18n="tiangong">Tiangong</dt><dd data-i18n="calculating">Calculating …</dd></dl>
       </section>
       <section class="card">
-        <h2>Orbit data</h2>
-        <dl class="kv" id="datainfo"><dt>Fetched</dt><dd>–</dd></dl>
+        <h2 data-i18n="orbitData">Orbit data</h2>
+        <dl class="kv" id="datainfo"><dt data-i18n="fetched">Fetched</dt><dd>–</dd></dl>
       </section>
     </aside>
   </div>
 </div>
 
+<script>
+// Language: English (default) or Simplified Chinese.
+// Chosen by ?lang=zh / ?lang=en, then the saved choice, then the browser language.
+// Runs before the page is shown, so the text never flashes in the wrong language.
+(function () {
+  const pick = v => (v === 'zh' || v === 'en') ? v : null;
+  let lang = null;
+  try { lang = pick(new URLSearchParams(location.search).get('lang')); } catch (e) {}
+  if (lang) { try { localStorage.setItem('sv-lang', lang); } catch (e) {} }
+  if (!lang) { try { lang = pick(localStorage.getItem('sv-lang')); } catch (e) {} }
+  if (!lang) lang = (navigator.languages || [navigator.language || '']).some(l => /^zh\b/i.test(l || '')) ? 'zh' : 'en';
+  const ZH = lang === 'zh';
+  window.SV_LANG = lang;
+  window.L = (en, zh) => ZH ? zh : en;
+  document.documentElement.lang = ZH ? 'zh-CN' : 'en';
+  document.documentElement.classList.toggle('lang-zh', ZH);
+
+  // Static page text in Chinese, keyed by data-i18n / data-i18n-aria / data-i18n-title.
+  const T = {
+    eyebrow: ' · 实时星空',
+    placeGroup: '选择地点',
+    myLocTitle: '使用我的位置',
+    myLoc: '我的位置',
+    narvik: '纳尔维克',
+    tromso: '特罗姆瑟',
+    h1: '<em class="pname">纳尔维克</em>上空的卫星',
+    lede: '这些光点是此刻在镇子上空被阳光照亮的卫星和火箭箭体，绿色的光是 NOAA 的北极光预报。拖动可旋转视图，双指捏合或滚动可缩放，点按光点或列表中的一行可查看详情。用“我的位置”查看你所在地的星空，在“仰望”模式中打开指南针，把手机平放，就能看到你头顶的天空。',
+    view3d: '3D 视图',
+    loading: '正在加载轨道数据 …',
+    viewGroup: '视图',
+    sky: '天空',
+    look: '仰望',
+    earth: '地球',
+    compass: '指南针',
+    fullscreen: '全屏',
+    live: '实时',
+    timeRange: '距现在的时间（分钟）',
+    now: '现在',
+    speedGroup: '速度',
+    layersGroup: '图层',
+    stations: '空间站',
+    bright: '亮目标',
+    starlink: '星链',
+    aurora: '北极光',
+    shade: '显示地球阴影中的目标',
+    method: '卫星位置由浏览器根据 <a href="https://celestrak.org/NORAD/elements/" target="_blank" rel="noopener">CelesTrak</a> 的轨道数据，用简化的 SGP4 模型计算。数据新鲜时，天空中的位置误差约为一度；数据越旧，误差越大。目标被阳光照亮、高于地平线至少 10°，并且所选地点的太阳低于地平线 6° 以上时，才算可见。“亮目标”是 CelesTrak 列出的约 150 个最亮的卫星和火箭箭体。星链图层显示的是从挪威北部高空经过的那些轨道上的卫星。轨道数据每天自动更新两次，“轨道数据”一栏显示最近一次获取的时间。3D 北极光是 NOAA 对未来 30–60 分钟的 OVATION 预报，绘制在 100–250 公里高度，只有在时间轴接近现在时才显示。闪烁的绿色圆环标出视野中最近的、被阳光照亮的卫星，优先选择正在靠近的那颗。星星用于辨认方向。',
+    auroraNow: '当前北极光',
+    loadingShort: '加载中 …',
+    auroraLoading: '正在从 NOAA 和挪威气象研究所加载数据 …',
+    probOver: '<span class="pname">纳尔维克</span>上空的概率',
+    kpNow: '当前 Kp 指数',
+    cloudIn: '<span class="pname">纳尔维克</span>的云量',
+    kpFc: 'Kp 预报，未来 24 小时',
+    cloudFc: '云量，未来 12 小时',
+    alertTitle: '北极光提醒',
+    alertState: '纳尔维克或特罗姆瑟出现北极光时通知你',
+    auroraSrc: '来源：<a href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" target="_blank" rel="noopener">NOAA SWPC</a>（OVATION 预报、Kp、太阳风）和<a href="https://api.met.no" target="_blank" rel="noopener">挪威气象局</a>（云量，CC BY 4.0）。每隔几分钟更新一次。',
+    passes: '接下来的明亮过境',
+    passesInfo: '未来 12 小时内天色足够暗的时段。列出最高点时间、最大高度角和方向。点按即可跳到那个时刻。',
+    colTime: '时间',
+    colObject: '目标',
+    colMax: '最高',
+    colDir: '方向',
+    calcPasses: '正在计算过境 …',
+    spaceStations: '空间站',
+    calculating: '计算中 …',
+    iss: '国际空间站',
+    tiangong: '天宫',
+    orbitData: '轨道数据',
+    fetched: '获取时间',
+    langGroup: '语言',
+  };
+  function apply() {
+    if (ZH) {
+      document.querySelectorAll('[data-i18n]').forEach(el => { const v = T[el.dataset.i18n]; if (v != null) el.innerHTML = v; });
+      document.querySelectorAll('[data-i18n-aria]').forEach(el => { const v = T[el.dataset.i18nAria]; if (v != null) el.setAttribute('aria-label', v); });
+      document.querySelectorAll('[data-i18n-title]').forEach(el => { const v = T[el.dataset.i18nTitle]; if (v != null) el.title = v; });
+    }
+    document.querySelectorAll('.lang button').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
+      b.addEventListener('click', () => {
+        if (b.dataset.lang === lang) return;
+        try { localStorage.setItem('sv-lang', b.dataset.lang); } catch (e) {}
+        const u = new URL(location.href); u.searchParams.set('lang', b.dataset.lang);
+        location.replace(u.toString());
+      });
+    });
+  }
+  apply();
+})();
+
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // Compact orbit propagator: SGP4-style mean-element initialisation with J2/J4 secular
@@ -484,10 +593,11 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 (function () {
   const O = window.ORB, D2R = Math.PI / 180, RE = 6378.137;
   const $ = id => document.getElementById(id);
+  const L = window.L || ((en) => en), ZH = window.SV_LANG === 'zh';
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const PLACES = { narvik: { key: 'narvik', name: 'Narvik', lat: 68.4385, lon: 17.4273, h: 0.02 }, tromso: { key: 'tromso', name: 'Tromsø', lat: 69.6496, lon: 18.9560, h: 0.02 } };
-  try { const m = JSON.parse(localStorage.getItem('sv-me') || 'null'); if (m && isFinite(m.lat) && isFinite(m.lon) && Math.abs(m.lat) <= 90) PLACES.me = { key: 'me', name: m.name || 'your location', named: !!m.named, lat: +m.lat, lon: +m.lon, h: isFinite(m.h) ? +m.h : 0.02 }; } catch (e) {}
-  const placeLabel = p => p.key === 'me' && !p.named ? 'You are here' : p.name;
+  const PLACES = { narvik: { key: 'narvik', name: L('Narvik', '纳尔维克'), lat: 68.4385, lon: 17.4273, h: 0.02 }, tromso: { key: 'tromso', name: L('Tromsø', '特罗姆瑟'), lat: 69.6496, lon: 18.9560, h: 0.02 } };
+  try { const m = JSON.parse(localStorage.getItem('sv-me') || 'null'); if (m && isFinite(m.lat) && isFinite(m.lon) && Math.abs(m.lat) <= 90) PLACES.me = { key: 'me', name: m.name || L('your location', '你的位置'), named: !!m.named, lat: +m.lat, lon: +m.lon, h: isFinite(m.h) ? +m.h : 0.02 }; } catch (e) {}
+  const placeLabel = p => p.key === 'me' && !p.named ? L('You are here', '你在这里') : p.name;
   let PLACE, LAT, LON, OBS, sLa, cLa, sLo, cLo;
   function setObserver(key) {
     PLACE = PLACES[key] || PLACES.narvik; LAT = PLACE.lat; LON = PLACE.lon; OBS = O.geodeticToEcef(LAT, LON, PLACE.h);
@@ -498,17 +608,18 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   setObserver(initialPlace);
   const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const num = (x, d = 0) => x.toFixed(d).replace('-', '−');
-  const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const DIRS = ZH ? ['北', '北东北', '东北', '东东北', '东', '东东南', '东南', '南东南', '南', '南西南', '西南', '西西南', '西', '西西北', '西北', '北西北']
+    : ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const dirName = a => DIRS[Math.round(((a % 360) + 360) % 360 / 22.5) % 16];
 
   // ---------- time in Oslo ----------
-  const WD = { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' };
+  const WD = ZH ? { Mon: '周一', Tue: '周二', Wed: '周三', Thu: '周四', Fri: '周五', Sat: '周六', Sun: '周日' } : { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' };
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const fmtP = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Oslo', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
   function oslo(t) { const p = {}; for (const x of fmtP.formatToParts(new Date(t))) p[x.type] = x.value; return { y: +p.year, mo: +p.month, d: +p.day, h: p.hour === '24' ? '00' : p.hour, mi: p.minute, s: p.second, wd: WD[p.weekday] || p.weekday }; }
   const hm = t => { const o = oslo(t); return o.h + ':' + o.mi; };
   const dayKey = t => { const o = oslo(t); return o.y * 10000 + o.mo * 100 + o.d; };
-  const dateStr = t => { const o = oslo(t); return o.wd + ' ' + o.d + ' ' + MON[o.mo - 1]; };
+  const dateStr = t => { const o = oslo(t); return ZH ? o.mo + '月' + o.d + '日 ' + o.wd : o.wd + ' ' + o.d + ' ' + MON[o.mo - 1]; };
 
   // ---------- astronomy helpers ----------
   function enu(x, y, z) { const dx = x - OBS[0], dy = y - OBS[1], dz = z - OBS[2];
@@ -526,18 +637,18 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 
   // ---------- objects ----------
   const OBJ = []; let N = 0;
-  const KIND_NAME = ['Space station', '', 'Starlink'];
+  const KIND_NAME = [L('Space station', '空间站'), '', L('Starlink', '星链')];
   function addObjects(rows, group) {
     for (const el of rows) {
       let s; try { s = O.init(el); } catch (e) { continue; }
       if (!isFinite(s.mdot) || !isFinite(s.ao)) continue;
       let kind = group === 'starlink' ? 2 : (el.id === 25544 || el.id === 48274) ? 0 : 1;
-      const name = el.id === 25544 ? 'ISS' : el.id === 48274 ? 'Tiangong (CSS)' : el.name;
+      const name = el.id === 25544 ? L('ISS', '国际空间站') : el.id === 48274 ? L('Tiangong (CSS)', '天宫空间站') : el.name;
       OBJ.push({ name, intl: el.intl, id: el.id, kind, s, epoch: s.t0 });
     }
     N = OBJ.length;
   }
-  const kindLabel = o => o.kind === 0 ? 'Space station' : o.kind === 2 ? 'Starlink' : /R\/B|DEB/.test(o.name) ? 'Rocket body' : 'Satellite';
+  const kindLabel = o => o.kind === 0 ? L('Space station', '空间站') : o.kind === 2 ? L('Starlink', '星链') : /R\/B|DEB/.test(o.name) ? L('Rocket body', '火箭箭体') : L('Satellite', '卫星');
 
   // ---------- time model ----------
   let speed = 1, anchorWall = Date.now(), anchorSim = anchorWall, live = true;
@@ -602,7 +713,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 
   const labels = [];
   function makeLabel(text, opt) {
-    const o = Object.assign({ px: 64, color: '#e4ecf7', weight: '600', family: '"Instrument Sans", system-ui, sans-serif', h: 1, depthTest: false }, opt || {});
+    const o = Object.assign({ px: 64, color: '#e4ecf7', weight: '600', family: '"Instrument Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif', h: 1, depthTest: false }, opt || {});
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: o.depthTest, depthWrite: false }));
     sp.renderOrder = 10; sp.userData = { text, o, c: document.createElement('canvas') }; drawLabel(sp); labels.push(sp); return sp;
   }
@@ -614,9 +725,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
     sp.material.map = tex; sp.material.needsUpdate = true; const k = sp.userData.k || 1; sp.userData.sx = o.h * c.width / c.height; sp.scale.set(sp.userData.sx * k, o.h * k, 1);
   }
-  const DISPLAY = '"Big Shoulders Display", "Arial Narrow", sans-serif';
-  [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, az]) => {
-    const s = makeLabel(t, { family: DISPLAY, weight: '800', px: 96, h: 1.25, color: t === 'N' ? '#ffc66b' : '#e4ecf7' });
+  const DISPLAY = '"Big Shoulders Display", "Arial Narrow", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+  [[L('N', '北'), 0], [L('E', '东'), 90], [L('S', '南'), 180], [L('W', '西'), 270]].forEach(([t, az]) => {
+    const s = makeLabel(t, { family: DISPLAY, weight: '800', px: 96, h: 1.25, color: az === 0 ? '#ffc66b' : '#e4ecf7' });
     s.userData.compass = az; domeG.add(s);
   });
   [10, 30, 60].forEach(el => { const s = makeLabel(el + '°', { px: 48, h: 0.5, color: '#8d9cb5', family: '"JetBrains Mono", monospace', weight: '400' }); s.position.copy(toDome(0, -Math.cos(el * D2R), Math.sin(el * D2R), R + 0.05)).add(new THREE.Vector3(0.45, 0.2, 0)); domeG.add(s); });
@@ -656,8 +767,10 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   const constPos = new Float32Array(constSegs.length * 6), constGeo = new THREE.BufferGeometry();
   constGeo.setAttribute('position', new THREE.BufferAttribute(constPos, 3));
   const constLines = new THREE.LineSegments(constGeo, lineMat(0x9fb3d6, 0.22)); constLines.frustumCulled = false; starG.add(constLines);
-  const starLbls = STARS.map(s => { if (!s[4]) return null; const l = makeLabel(s[0], { px: 44, h: 0.42, color: '#aab8cf', weight: '500' }); starG.add(l); return l; });
-  const constLbls = CONST.map(c => { const l = makeLabel(c[0], { px: 44, h: 0.42, color: '#7f90ad', weight: '500' }); starG.add(l); return l; });
+  const STAR_ZH = { Polaris: '北极星', Vega: '织女星', Deneb: '天津四', Altair: '牛郎星', Capella: '五车二', Arcturus: '大角星', Aldebaran: '毕宿五', Betelgeuse: '参宿四', Rigel: '参宿七' };
+  const CONST_ZH = { 'Big Dipper': '北斗七星', Cassiopeia: '仙后座', 'Summer Triangle': '夏季大三角', Orion: '猎户座' };
+  const starLbls = STARS.map(s => { if (!s[4]) return null; const l = makeLabel(ZH ? STAR_ZH[s[0]] || s[0] : s[0], { px: 44, h: 0.42, color: '#aab8cf', weight: '500' }); starG.add(l); return l; });
+  const constLbls = CONST.map(c => { const l = makeLabel(ZH ? CONST_ZH[c[0]] || c[0] : c[0], { px: 44, h: 0.42, color: '#7f90ad', weight: '500' }); starG.add(l); return l; });
   function updateStars(t, sunEl) {
     const lst = O.gmst(t) + LON * D2R, skyA = Math.max(0, Math.min(1, (-sunEl - 3) / 9));
     STARS.forEach((s, i) => {
@@ -709,12 +822,14 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
       l.position.copy(u.off).multiplyScalar(k).add(u.surf); l.scale.set(u.sx * k, u.o.h * k, 1); };
     globeG.children.forEach(each); if (placeMark) placeMark.children.forEach(each);
   }
+  const CITY_ZH = { Narvik: '纳尔维克', 'Tromsø': '特罗姆瑟', 'Bodø': '博德', Nordkapp: '北角', Oslo: '奥斯陆', Longyearbyen: '朗伊尔城', 'Reykjavík': '雷克雅未克', Stockholm: '斯德哥尔摩', Helsinki: '赫尔辛基', London: '伦敦', 'North Pole': '北极' };
   const CITIES = [['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
     ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['North Pole', 90, 0]];
   { const cp = new Float32Array(CITIES.length * 3), cs = new Float32Array(CITIES.length), cc = new Float32Array(CITIES.length * 4);
     CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = 3.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
-      const l = makeLabel(c[0], { px: 48, h: 0.022, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
-      l.position.copy(geoV(c[1], c[2], 1.014)); l.position.y += 0.0055; l.userData.city = c[0]; pinLabel(l, geoV(c[1], c[2], 1)); globeG.add(l); });
+      const cn = ZH ? CITY_ZH[c[0]] || c[0] : c[0];
+      const l = makeLabel(cn, { px: 48, h: 0.022, color: c[3] ? '#ffc66b' : '#aab8cf', depthTest: true, weight: c[3] ? '600' : '500' });
+      l.position.copy(geoV(c[1], c[2], 1.014)); l.position.y += 0.0055; l.userData.city = cn; pinLabel(l, geoV(c[1], c[2], 1)); globeG.add(l); });
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(cp, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(cs, 1)); g.setAttribute('aCol', new THREE.BufferAttribute(cc, 4));
     const m = ptMat(); m.depthTest = true; globeG.add(new THREE.Points(g, m)); }
   // world map: Natural Earth 1:50m via world-atlas, loaded the first time the globe is shown
@@ -906,7 +1021,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     selGeo.setDrawRange(0, n * 2); selGeo.attributes.position.needsUpdate = true; selGeo.attributes.color.needsUpdate = true;
   }
 
-  function skyState(el) { return el > -0.83 ? 'Daylight' : el > -6 ? 'Civil twilight' : el > -12 ? 'Nautical twilight' : el > -18 ? 'Astronomical twilight' : 'Dark'; }
+  function skyState(el) { return el > -0.83 ? L('Daylight', '白天') : el > -6 ? L('Civil twilight', '民用晨昏蒙影') : el > -12 ? L('Nautical twilight', '航海晨昏蒙影') : el > -18 ? L('Astronomical twilight', '天文晨昏蒙影') : L('Dark', '天黑'); }
   let lastReadout = '';
   function updateReadout(t, sun) {
     const o = oslo(t), clock = o.h + ':' + o.mi + ':' + o.s;
@@ -914,27 +1029,27 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     $('clock').textContent = clock;
     const off = Math.round((t - Date.now()) / 60000);
     let dl = dateStr(t);
-    if (!live) dl += ' · ' + (off === 0 ? 'now' : (off > 0 ? '+' : '−') + (Math.abs(off) >= 60 ? Math.floor(Math.abs(off) / 60) + ' h ' : '') + (Math.abs(off) % 60) + ' min') + (speed > 1 ? ' · ' + speed + '×' : '');
+    if (!live) dl += ' · ' + (off === 0 ? L('now', '现在') : (off > 0 ? '+' : '−') + (Math.abs(off) >= 60 ? Math.floor(Math.abs(off) / 60) + L(' h ', ' 小时 ') : '') + (Math.abs(off) % 60) + L(' min', ' 分钟')) + (speed > 1 ? ' · ' + speed + '×' : '');
     $('dateline').textContent = dl;
-    $('sunline').textContent = 'Sun ' + num(sun.el, 1) + '° · ' + skyState(sun.el);
+    $('sunline').textContent = L('Sun ', '太阳 ') + num(sun.el, 1) + '° · ' + skyState(sun.el);
     const parts = [];
     if (sun.el < -6) {
-      if (counts[0]) parts.push('<span class="b">' + (counts[0] === 1 ? '1 space station' : counts[0] + ' space stations') + '</span>');
-      parts.push('<span class="b">' + counts[1] + ' bright</span>');
-      if (starlinkState === 'ok') parts.push('<span class="s">' + counts[2] + ' Starlink</span>');
-      if (AUR.pN != null && Math.abs(t - Date.now()) < 90 * 60000) parts.push('<span class="a">aurora ' + Math.round(AUR.pN) + ' %</span>');
-      $('nowline').innerHTML = 'Visible: ' + parts.join(' · ');
-    } else $('nowline').textContent = 'Too bright to see satellites';
-    $('livetxt').textContent = live ? 'Live' : 'Shifted';
+      if (counts[0]) parts.push('<span class="b">' + (ZH ? counts[0] + ' 个空间站' : counts[0] === 1 ? '1 space station' : counts[0] + ' space stations') + '</span>');
+      parts.push('<span class="b">' + counts[1] + L(' bright', ' 个亮目标') + '</span>');
+      if (starlinkState === 'ok') parts.push('<span class="s">' + counts[2] + L(' Starlink', ' 颗星链') + '</span>');
+      if (AUR.pN != null && Math.abs(t - Date.now()) < 90 * 60000) parts.push('<span class="a">' + L('aurora ', '极光 ') + Math.round(AUR.pN) + ' %</span>');
+      $('nowline').innerHTML = L('Visible: ', '可见：') + parts.join(' · ');
+    } else $('nowline').textContent = L('Too bright to see satellites', '天太亮，看不到卫星');
+    $('livetxt').textContent = live ? L('Live', '实时') : L('Shifted', '已调时');
     const cj = CLOSE.j;
-    $('closeline').innerHTML = cj >= 0 ? '<i></i>Closest: ' + esc(OBJ[cj].name) + ' · ' + Math.round(CLOSE.rng).toLocaleString('en-GB') + ' km · ' + (CLOSE.appr ? 'coming closer' : 'moving away') : '';
+    $('closeline').innerHTML = cj >= 0 ? '<i></i>' + L('Closest: ', '最近：') + esc(OBJ[cj].name) + ' · ' + Math.round(CLOSE.rng).toLocaleString('en-GB') + L(' km · ', ' 公里 · ') + (CLOSE.appr ? L('coming closer', '正在靠近') : L('moving away', '正在远离')) : '';
     const ti = $('time'); if (document.activeElement !== ti) ti.value = Math.max(-60, Math.min(720, off));
     // banner
     const msgs = [];
-    if (sun.el > -6) msgs.push(nextDark ? 'The sky is too bright right now. It gets dark enough around ' + hm(nextDark) + (dayKey(nextDark) !== dayKey(t) ? ' (' + dateStr(nextDark) + ')' : '') + '.' : 'The sky is too bright to see satellites right now.');
+    if (sun.el > -6) msgs.push(nextDark ? (ZH ? '现在天还太亮，大约 ' + (dayKey(nextDark) !== dayKey(t) ? dateStr(nextDark) + ' ' : '') + hm(nextDark) + ' 天色才足够暗。' : 'The sky is too bright right now. It gets dark enough around ' + hm(nextDark) + (dayKey(nextDark) !== dayKey(t) ? ' (' + dateStr(nextDark) + ')' : '') + '.') : L('The sky is too bright to see satellites right now.', '现在天太亮，看不到卫星。'));
     const oldest = Math.max(dataAgeDays(), starlinkState === 'ok' ? slAgeDays() : 0);
-    if (oldest > 4) msgs.push('The orbit data is ' + Math.floor(oldest) + ' days old, so positions may be off by several degrees.');
-    $('banner').hidden = !msgs.length; $('bannertxt').textContent = msgs.join(' ');
+    if (oldest > 4) msgs.push(L('The orbit data is ' + Math.floor(oldest) + ' days old, so positions may be off by several degrees.', '轨道数据已有 ' + Math.floor(oldest) + ' 天，位置可能偏差好几度。'));
+    $('banner').hidden = !msgs.length; $('bannertxt').textContent = msgs.join(L(' ', ''));
   }
 
   // ---------- phone compass for "Look up" (device orientation → camera) ----------
@@ -952,7 +1067,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
       const want = ((360 - e.webkitCompassHeading - alpha) % 360 + 360) % 360;
       if (compass.off == null) compass.off = want; else { const d = ((want - compass.off + 540) % 360) - 180; compass.off = (compass.off + d * 0.04 + 360) % 360; }
       alpha += compass.off;
-    } else if (ORIENT_EV === 'deviceorientation' && !e.absolute && !compass.rel) { compass.rel = true; lookMsg('This phone does not report north, so directions may be off.'); }
+    } else if (ORIENT_EV === 'deviceorientation' && !e.absolute && !compass.rel) { compass.rel = true; lookMsg(L('This phone does not report north, so directions may be off.', '这部手机不提供正北方向，方向可能不准。')); }
     const so = ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * D2R;
     cEu.set(e.beta * D2R, alpha * D2R, -e.gamma * D2R, 'YXZ');
     compass.tgt.setFromEuler(cEu).multiply(cQ1).multiply(cQ0.setFromAxisAngle(ZEE, -so));
@@ -964,14 +1079,14 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
       const DOE = window.DeviceOrientationEvent;
       if (DOE && typeof DOE.requestPermission === 'function') {
         let r = 'denied'; try { r = await DOE.requestPermission(); } catch (e) {}
-        if (r !== 'granted') { lookMsg('Motion and compass access was denied.'); return; }
+        if (r !== 'granted') { lookMsg(L('Motion and compass access was denied.', '动作与指南针权限被拒绝。')); return; }
       }
       if (mode !== 'look') setMode('look');
       Object.assign(compass, { on: true, have: false, off: null, rel: false });
       window.addEventListener(ORIENT_EV, onOrient);
       clearTimeout(compass.timer);
-      compass.timer = setTimeout(() => { if (compass.on && !compass.have) { setCompass(false); lookMsg('No compass found on this device.'); } }, 3000);
-      lookMsg('Hold your phone flat, screen up, and look down at it. The top of the phone points the way you face.');
+      compass.timer = setTimeout(() => { if (compass.on && !compass.have) { setCompass(false); lookMsg(L('No compass found on this device.', '此设备上没有找到指南针。')); } }, 3000);
+      lookMsg(L('Hold your phone flat, screen up, and look down at it. The top of the phone points the way you face.', '将手机平放、屏幕朝上，低头看屏幕。手机顶部指向你面朝的方向。'));
     } else {
       compass.on = false; compass.have = false; clearTimeout(compass.timer); window.removeEventListener(ORIENT_EV, onOrient);
     }
@@ -982,7 +1097,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   let lastHeading = '';
   function updateHeading() {
     if (mode !== 'look') return;
-    const az = ((cam.look.az / D2R) % 360 + 360) % 360, s = 'Facing ' + dirName(az) + ' ' + Math.round(az) % 360 + '° · ' + Math.round(cam.look.pitch / D2R) + '° up';
+    const az = ((cam.look.az / D2R) % 360 + 360) % 360, s = ZH ? '朝向 ' + dirName(az) + ' ' + Math.round(az) % 360 + '° · 仰角 ' + Math.round(cam.look.pitch / D2R) + '°' : 'Facing ' + dirName(az) + ' ' + Math.round(az) % 360 + '° · ' + Math.round(cam.look.pitch / D2R) + '° up';
     if (s !== lastHeading) { lastHeading = s; $('heading').textContent = s; }
   }
 
@@ -1070,8 +1185,11 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     if (!show) { tag.hidden = true; return; }
     const o = OBJ[j], t = simNow(), st = stateAt(o, t, Math.cos(O.gmst(t)), Math.sin(O.gmst(t)), sunNow.eci, false), alt = Math.hypot(st.x, st.y, st.z) - 6371;
     const nx = PASSES.find(ps => ps.j === j && ps.tEnd > t);
-    tag.innerHTML = '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · ' + Math.round(alt) + ' km up</span><br><span>' + (el >= 0 ? num(el) + '° above the horizon to the ' + dirName(curAz[j]) : 'below the horizon') + ' · ' + (lit ? 'in sunlight' : 'in Earth’s shadow') + '</span>' +
-      (nx ? '<br><span>' + (nx.tStart <= t ? 'Visible now, highest ' : 'Next: ') + num(nx.maxEl) + '° at ' + hm(nx.tMax) + '</span>' : '');
+    tag.innerHTML = ZH
+      ? '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · 高度 ' + Math.round(alt) + ' 公里</span><br><span>' + (el >= 0 ? dirName(curAz[j]) + '方，地平线上 ' + num(el) + '°' : '在地平线以下') + ' · ' + (lit ? '被阳光照亮' : '在地球阴影中') + '</span>' +
+        (nx ? '<br><span>' + (nx.tStart <= t ? '现在可见，' : '下一次：') + hm(nx.tMax) + ' 最高 ' + num(nx.maxEl) + '°</span>' : '')
+      : '<b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · ' + Math.round(alt) + ' km up</span><br><span>' + (el >= 0 ? num(el) + '° above the horizon to the ' + dirName(curAz[j]) : 'below the horizon') + ' · ' + (lit ? 'in sunlight' : 'in Earth’s shadow') + '</span>' +
+        (nx ? '<br><span>' + (nx.tStart <= t ? 'Visible now, highest ' : 'Next: ') + num(nx.maxEl) + '° at ' + hm(nx.tMax) + '</span>' : '');
     tag.hidden = false;
     const r = stage.getBoundingClientRect(), tw = tag.offsetWidth, th = tag.offsetHeight; let left = p.x + 14, top = p.y - th / 2;
     if (left + tw > r.width - 8) left = p.x - tw - 14;
@@ -1112,11 +1230,11 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   function renderPasses() {
     const rows = $('rows'); rows.innerHTML = '';
     const now = Date.now(), list = PASSES.filter(p => p.tEnd >= now - 60000).slice(0, 40);
-    if (!list.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = nextDark ? 'No bright passes while it is dark in the next 12 hours. The next dark period starts around ' + hm(nextDark) + '.' : 'No bright passes in the next 12 hours.'; rows.appendChild(d); return; }
+    if (!list.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = nextDark ? L('No bright passes while it is dark in the next 12 hours. The next dark period starts around ' + hm(nextDark) + '.', '未来 12 小时内天黑时没有明亮过境。下一个天黑时段大约从 ' + hm(nextDark) + ' 开始。') : L('No bright passes in the next 12 hours.', '未来 12 小时内没有明亮过境。'); rows.appendChild(d); return; }
     list.forEach(p => {
       const o = OBJ[p.j], b = document.createElement('button'); b.type = 'button'; b.className = 'row' + (o.kind === 0 ? ' st' : ''); b.dataset.j = p.j; b.setAttribute('aria-pressed', String(sel === p.j));
       const onNow = p.tStart <= now && p.tEnd >= now, other = dayKey(p.tMax) !== dayKey(now);
-      b.innerHTML = '<span class="t">' + hm(p.tMax) + (onNow ? '<small class="on">now</small>' : other ? '<small>' + oslo(p.tMax).wd + '</small>' : '') + '</span><span class="n"><b>' + esc(o.name) + '</b><span>' + kindLabel(o) + ' · from ' + dirName(p.azStart) + ' to ' + dirName(p.azEnd) + '</span></span><span class="e' + (p.maxEl >= 60 ? ' hi' : '') + '">' + num(p.maxEl) + '°</span><span class="d">' + dirName(p.azMax) + '</span>';
+      b.innerHTML = '<span class="t">' + hm(p.tMax) + (onNow ? '<small class="on">' + L('now', '现在') + '</small>' : other ? '<small>' + oslo(p.tMax).wd + '</small>' : '') + '</span><span class="n"><b>' + esc(o.name) + '</b><span>' + kindLabel(o) + (ZH ? ' · 从' + dirName(p.azStart) + '到' + dirName(p.azEnd) : ' · from ' + dirName(p.azStart) + ' to ' + dirName(p.azEnd)) + '</span></span><span class="e' + (p.maxEl >= 60 ? ' hi' : '') + '">' + num(p.maxEl) + '°</span><span class="d">' + dirName(p.azMax) + '</span>';
       b.addEventListener('click', () => {
         if (sel === p.j) { select(-1); return; }
         select(p.j);
@@ -1130,9 +1248,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     const gen = predGen, dl = $('stations'); dl.innerHTML = '';
     const t0 = Date.now(), STEP = 30000, DAYS = 5, NSx = DAYS * 2880;
     for (const id of [25544, 48274]) {
-      const j = OBJ.findIndex(o => o.id === id); const name = id === 25544 ? 'ISS' : 'Tiangong';
+      const j = OBJ.findIndex(o => o.id === id); const name = id === 25544 ? L('ISS', '国际空间站') : L('Tiangong', '天宫');
       const dt = document.createElement('dt'); dt.textContent = name; const dd = document.createElement('dd'); dl.append(dt, dd);
-      if (j < 0) { dd.textContent = 'No orbit data.'; continue; }
+      if (j < 0) { dd.textContent = L('No orbit data.', '没有轨道数据。'); continue; }
       let first = null, maxAny = -90, maxT = 0, k0 = 0;
       for (let k = 0; k <= NSx; k++) {
         const t = t0 + k * STEP, gm = O.gmst(t), st = stateAt(OBJ[j], t, Math.cos(gm), Math.sin(gm), null, false);
@@ -1140,7 +1258,14 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
         if (!first && st.el >= 10) { const s = sunAt(t); if (s.el < -6 && O.litFraction(O.prop(OBJ[j].s, t).r, s.eci) >= 0.5) first = { t, el: st.el, az: st.az }; }
         if (k - k0 > 600) { k0 = k; await sleep(); if (gen !== predGen) return; }
       }
-      if (first) dd.textContent = 'Next visible pass ' + dateStr(first.t) + ' at ' + hm(first.t) + ', towards ' + dirName(first.az) + '.';
+      if (ZH) {
+        const far = LAT >= 0 ? '北' : '南', side = LAT >= 0 ? '南' : '北';
+        if (first) dd.textContent = '下一次可见过境：' + dateStr(first.t) + ' ' + hm(first.t) + '，朝' + dirName(first.az) + '方向。';
+        else if (maxAny < 0) dd.textContent = '从' + PLACE.name + '看，它从不升到地平线以上，因为它的轨道不够靠' + far + '。';
+        else if (maxAny < 10) dd.textContent = '未来 ' + DAYS + ' 天没有可见过境。从' + PLACE.name + '看，它在' + side + '方地平线上最高只有 ' + num(maxAny) + '°，因为它的轨道不够靠' + far + '。';
+        else dd.textContent = '未来 ' + DAYS + ' 天没有可见过境。它经过' + PLACE.name + '上空时，要么天太亮，要么它在地球阴影中。';
+      }
+      else if (first) dd.textContent = 'Next visible pass ' + dateStr(first.t) + ' at ' + hm(first.t) + ', towards ' + dirName(first.az) + '.';
       else if (maxAny < 0) dd.textContent = 'Never rises above the horizon as seen from ' + PLACE.name + '. Its orbit does not reach far enough ' + (LAT >= 0 ? 'north' : 'south') + '.';
       else if (maxAny < 10) dd.textContent = 'No visible passes in the next ' + DAYS + ' days. From ' + PLACE.name + ' it gets no higher than ' + num(maxAny) + '° above the ' + (LAT >= 0 ? 'southern' : 'northern') + ' horizon, because its orbit does not reach far enough ' + (LAT >= 0 ? 'north' : 'south') + '.';
       else dd.textContent = 'No visible passes in the next ' + DAYS + ' days. When it passes over ' + PLACE.name + ', it is either too bright or it is in Earth’s shadow.';
@@ -1152,8 +1277,9 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   const dataAgeDays = () => fetched ? (Date.now() - fetched) / 86400000 : 0;
   const slAgeDays = () => slFetched ? (Date.now() - slFetched) / 86400000 : 0;
   function ageHtml(t) {
-    const age = (Date.now() - t) / 86400000, h = Math.round(age * 24), cls = age < 1.5 ? 'ok' : age < 4 ? 'mid' : 'old', lbl = age < 1.5 ? 'fresh' : age < 4 ? 'OK' : 'old';
-    return esc(dateStr(t)) + ' at ' + hm(t) + ' (' + (h < 1 ? 'under 1 h' : h < 48 ? h + ' h' : Math.floor(age) + ' days') + ' ago)<span class="pill ' + cls + '">' + lbl + '</span>';
+    const age = (Date.now() - t) / 86400000, h = Math.round(age * 24), cls = age < 1.5 ? 'ok' : age < 4 ? 'mid' : 'old', lbl = age < 1.5 ? L('fresh', '新') : age < 4 ? L('OK', '正常') : L('old', '过旧');
+    return ZH ? esc(dateStr(t)) + ' ' + hm(t) + '（' + (h < 1 ? '不到 1 小时' : h < 48 ? h + ' 小时' : Math.floor(age) + ' 天') + '前）<span class="pill ' + cls + '">' + lbl + '</span>'
+      : esc(dateStr(t)) + ' at ' + hm(t) + ' (' + (h < 1 ? 'under 1 h' : h < 48 ? h + ' h' : Math.floor(age) + ' days') + ' ago)<span class="pill ' + cls + '">' + lbl + '</span>';
   }
   function parsePolar(txt) {
     const nl = txt.indexOf('\n'), head = txt.slice(0, nl), body = txt.slice(nl + 1).trim(), m = /T0=(\S+)/.exec(head);
@@ -1164,24 +1290,27 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   function renderDataInfo() {
     const dl = $('datainfo'); dl.innerHTML = '';
     const add = (k, html) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.innerHTML = html; dl.append(dt, dd); };
-    if (fetched) add('Bright', ageHtml(fetched));
-    if (slFetched && starlinkState !== 'none') add('Starlink', ageHtml(slFetched));
+    if (fetched) add(L('Bright', '亮目标'), ageHtml(fetched));
+    if (slFetched && starlinkState !== 'none') add(L('Starlink', '星链'), ageHtml(slFetched));
     const nb = OBJ.filter(o => o.kind !== 2).length, ns = OBJ.filter(o => o.kind === 2).length;
-    add('Count', nb + ' bright objects and space stations' + (ns ? ' · ' + ns.toLocaleString('en-GB') + ' Starlink' : ''));
-    if (starlinkState === 'ok') add('Selection', slInfo && slInfo.format === 'polar'
-      ? (LAT >= 62 ? 'Starlink in orbits with 70° and 97° inclination, the ones that pass high over ' + PLACE.name + '. Starlink at 43° and 53° inclination never gets more than a few degrees above the southern horizon from here.'
-        : 'Only Starlink in orbits with 70° and 97° inclination is loaded (the ones that pass high over northern Norway), so many of the Starlink satellites over ' + PLACE.name + ' are not shown.')
-      : 'Starlink with more than 50° inclination. The ones at 43° inclination never rise above the horizon in ' + PLACE.name + '.');
-    else if (starlinkState === 'loading') add('Selection', 'Loading Starlink …');
-    else if (starlinkState === 'old') add('Selection', 'The Starlink data is too old to give correct positions, so the layer is off until the next update.');
-    else add('Selection', 'Starlink data is not available right now.');
+    add(L('Count', '数量'), nb + L(' bright objects and space stations', ' 个亮目标和空间站') + (ns ? ' · ' + ns.toLocaleString('en-GB') + L(' Starlink', ' 颗星链') : ''));
+    const SEL = L('Selection', '范围');
+    if (starlinkState === 'ok') add(SEL, slInfo && slInfo.format === 'polar'
+      ? (LAT >= 62 ? L('Starlink in orbits with 70° and 97° inclination, the ones that pass high over ' + PLACE.name + '. Starlink at 43° and 53° inclination never gets more than a few degrees above the southern horizon from here.',
+          '倾角 70° 和 97° 轨道上的星链卫星，也就是从' + PLACE.name + '高空经过的那些。倾角 43° 和 53° 的星链在这里离南方地平线最多只有几度。')
+        : L('Only Starlink in orbits with 70° and 97° inclination is loaded (the ones that pass high over northern Norway), so many of the Starlink satellites over ' + PLACE.name + ' are not shown.',
+          '只加载了倾角 70° 和 97° 轨道上的星链（从挪威北部高空经过的那些），所以' + PLACE.name + '上空的许多星链卫星没有显示。'))
+      : L('Starlink with more than 50° inclination. The ones at 43° inclination never rise above the horizon in ' + PLACE.name + '.', '倾角大于 50° 的星链。倾角 43° 的星链在' + PLACE.name + '永远不会升到地平线以上。'));
+    else if (starlinkState === 'loading') add(SEL, L('Loading Starlink …', '正在加载星链 …'));
+    else if (starlinkState === 'old') add(SEL, L('The Starlink data is too old to give correct positions, so the layer is off until the next update.', '星链数据太旧，无法给出正确位置，因此该图层在下次更新前关闭。'));
+    else add(SEL, L('Starlink data is not available right now.', '星链数据暂时不可用。'));
   }
   function renderChips() {
     const c = [0, 0, 0]; OBJ.forEach(o => c[o.kind]++);
     $('c-station').textContent = c[0]; $('c-bright').textContent = c[1];
     const sb = $('l-starlink');
     if (starlinkState === 'ok') { $('c-starlink').textContent = c[2].toLocaleString('en-GB'); sb.disabled = false; }
-    else { $('c-starlink').textContent = starlinkState === 'loading' ? '…' : starlinkState === 'old' ? 'data too old' : 'not loaded'; sb.disabled = true; sb.setAttribute('aria-pressed', 'false'); }
+    else { $('c-starlink').textContent = starlinkState === 'loading' ? '…' : starlinkState === 'old' ? L('data too old', '数据过旧') : L('not loaded', '未加载'); sb.disabled = true; sb.setAttribute('aria-pressed', 'false'); }
   }
 
   // ---------- controls ----------
@@ -1361,20 +1490,20 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   function renderAurora() {
     const now = Date.now(), sun = sunAt(now), cl = cloudAt(now), pN = AUR.pN, pSky = AUR.pSky;
     const vEl = $('a-verdict'), sum = $('a-summary');
-    let verdict = 'Loading …', cls = 'wait', text = '';
+    let verdict = L('Loading …', '加载中 …'), cls = 'wait', text = '';
     const score = pN == null ? null : Math.max(pN, (pSky || 0) * 0.8);
-    if (AUR.err.ov && pN == null) { verdict = 'No data'; cls = 'low'; text = 'Could not fetch the northern lights forecast from NOAA right now. The page will try again in a few minutes.'; }
+    if (AUR.err.ov && pN == null) { verdict = L('No data', '无数据'); cls = 'low'; text = L('Could not fetch the northern lights forecast from NOAA right now. The page will try again in a few minutes.', '目前无法从 NOAA 获取极光预报。页面会在几分钟后重试。'); }
     else if (score != null) {
       const dir = AUR.skyDir != null ? dirName(AUR.skyDir) : null;
-      const where = pSky > pN + 3 && dir ? ' Strongest to the ' + dir + ', up to ' + Math.round(pSky) + ' % there.' : '';
-      if (sun.el > -8) { verdict = 'Too bright'; cls = 'low'; text = 'The sky is too bright for northern lights right now.' + (nextDark ? ' It gets dark around ' + hm(nextDark) + '.' : '') + ' The forecast below shows the activity.'; }
-      else if (cl && cl.c >= 85) { verdict = 'Cloudy'; cls = 'cloud'; text = 'There is ' + Math.round(cl.c) + ' % cloud cover over ' + PLACE.name + ', so the northern lights will be hard to see even though activity is ' + (score >= 12 ? 'good' : 'low') + '.'; }
+      const where = pSky > pN + 3 && dir ? L(' Strongest to the ' + dir + ', up to ' + Math.round(pSky) + ' % there.', dir + '方最强，那里可达 ' + Math.round(pSky) + '%。') : '';
+      if (sun.el > -8) { verdict = L('Too bright', '太亮'); cls = 'low'; text = L('The sky is too bright for northern lights right now.', '现在天太亮，看不到极光。') + (nextDark ? L(' It gets dark around ' + hm(nextDark) + '.', '大约 ' + hm(nextDark) + ' 天黑。') : '') + L(' The forecast below shows the activity.', '下面的预报显示了活动情况。'); }
+      else if (cl && cl.c >= 85) { verdict = L('Cloudy', '多云'); cls = 'cloud'; text = L('There is ' + Math.round(cl.c) + ' % cloud cover over ' + PLACE.name + ', so the northern lights will be hard to see even though activity is ' + (score >= 12 ? 'good' : 'low') + '.', PLACE.name + '上空云量 ' + Math.round(cl.c) + '%，所以即使极光活动' + (score >= 12 ? '较强' : '较弱') + '，也很难看到。'); }
       else {
-        if (score >= 30) { verdict = 'Good chances'; cls = 'good'; } else if (score >= 12) { verdict = 'Possible'; cls = 'mid'; } else if (score >= 5) { verdict = 'Slight chance'; cls = 'mid'; } else { verdict = 'Unlikely'; cls = 'low'; }
-        text = (score >= 12 ? 'Go out and look, ideally away from street lights.' : score >= 5 ? 'Faint northern lights may show low in the sky, best seen from a dark spot.' : 'Little activity right now.') + where + (cl && cl.c >= 50 ? ' It is partly cloudy (' + Math.round(cl.c) + ' %).' : '');
+        if (score >= 30) { verdict = L('Good chances', '机会很大'); cls = 'good'; } else if (score >= 12) { verdict = L('Possible', '有可能'); cls = 'mid'; } else if (score >= 5) { verdict = L('Slight chance', '机会较小'); cls = 'mid'; } else { verdict = L('Unlikely', '不太可能'); cls = 'low'; }
+        text = (score >= 12 ? L('Go out and look, ideally away from street lights.', '出去看看吧，最好远离路灯。') : score >= 5 ? L('Faint northern lights may show low in the sky, best seen from a dark spot.', '天空低处可能出现微弱的极光，最好在黑暗的地方观看。') : L('Little activity right now.', '目前极光活动很少。')) + where + (cl && cl.c >= 50 ? L(' It is partly cloudy (' + Math.round(cl.c) + ' %).', '局部多云（' + Math.round(cl.c) + '%）。') : '');
       }
     }
-    vEl.textContent = verdict; vEl.className = 'verdict ' + cls; sum.textContent = text || 'Loading data from NOAA and the Norwegian Meteorological Institute …';
+    vEl.textContent = verdict; vEl.className = 'verdict ' + cls; sum.textContent = text || L('Loading data from NOAA and the Norwegian Meteorological Institute …', '正在从 NOAA 和挪威气象研究所加载数据 …');
     $('a-prob').textContent = pN == null ? '–' : Math.round(pN) + ' %';
     $('a-kp').textContent = AUR.kp == null ? '–' : num(AUR.kp, 1); $('a-kp').className = AUR.kp == null ? '' : 'kp-' + kpCls(AUR.kp);
     $('a-cloud').textContent = cl ? Math.round(cl.c) + ' %' : '–';
@@ -1382,23 +1511,23 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     // solar wind
     const sw = $('a-wind'); sw.innerHTML = '';
     const add = (k, html) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.innerHTML = html; sw.append(dt, dd); };
-    if (AUR.bz != null) add('Bz', '<b class="' + (AUR.bz <= -5 ? 'good' : AUR.bz < 0 ? 'mid' : '') + '">' + num(AUR.bz, 0) + ' nT</b> · ' + (AUR.bz < 0 ? 'pointing south, which helps the northern lights' : 'pointing north, which dampens the northern lights'));
-    if (AUR.speed != null) add('Solar wind', '<b class="' + (AUR.speed >= 550 ? 'good' : AUR.speed >= 450 ? 'mid' : '') + '">' + Math.round(AUR.speed) + ' km/s</b> · ' + (AUR.speed >= 550 ? 'fast' : AUR.speed >= 450 ? 'fairly fast' : 'calm'));
-    if (AUR.bz == null && AUR.speed == null) add('Solar wind', AUR.err.sw ? 'Not available right now' : 'Loading …');
+    if (AUR.bz != null) add('Bz', '<b class="' + (AUR.bz <= -5 ? 'good' : AUR.bz < 0 ? 'mid' : '') + '">' + num(AUR.bz, 0) + ' nT</b> · ' + (AUR.bz < 0 ? L('pointing south, which helps the northern lights', '指向南，有利于极光') : L('pointing north, which dampens the northern lights', '指向北，会抑制极光')));
+    if (AUR.speed != null) add(L('Solar wind', '太阳风'), '<b class="' + (AUR.speed >= 550 ? 'good' : AUR.speed >= 450 ? 'mid' : '') + '">' + Math.round(AUR.speed) + L(' km/s', ' 公里/秒') + '</b> · ' + (AUR.speed >= 550 ? L('fast', '快') : AUR.speed >= 450 ? L('fairly fast', '较快') : L('calm', '平静')));
+    if (AUR.bz == null && AUR.speed == null) add(L('Solar wind', '太阳风'), AUR.err.sw ? L('Not available right now', '暂时不可用') : L('Loading …', '加载中 …'));
     // Kp forecast: next 8 three-hour blocks
     const kb = $('a-kpfc'); kb.innerHTML = '';
     const blocks = AUR.kpfc.filter(r => r.t + 3 * 3600000 > now).slice(0, 8);
     blocks.forEach(r => { const d = document.createElement('div'); d.className = 'kb ' + kpCls(r.kp) + (r.t <= now ? ' cur' : '');
-      d.innerHTML = '<i style="height:' + Math.max(6, r.kp / 9 * 100).toFixed(0) + '%"></i><b>' + num(r.kp, 0) + '</b><span>' + oslo(r.t).h + '</span>'; d.title = 'Kp ' + num(r.kp, 1) + ' from ' + hm(r.t); kb.appendChild(d); });
-    if (!blocks.length) kb.innerHTML = '<p class="m">' + (AUR.err.fc ? 'The Kp forecast is not available right now.' : 'Loading Kp forecast …') + '</p>';
+      d.innerHTML = '<i style="height:' + Math.max(6, r.kp / 9 * 100).toFixed(0) + '%"></i><b>' + num(r.kp, 0) + '</b><span>' + oslo(r.t).h + '</span>'; d.title = L('Kp ' + num(r.kp, 1) + ' from ' + hm(r.t), hm(r.t) + ' 起 Kp ' + num(r.kp, 1)); kb.appendChild(d); });
+    if (!blocks.length) kb.innerHTML = '<p class="m">' + (AUR.err.fc ? L('The Kp forecast is not available right now.', 'Kp 预报暂时不可用。') : L('Loading Kp forecast …', '正在加载 Kp 预报 …')) + '</p>';
     // clouds next 12 h
     const cb = $('a-clouds'); cb.innerHTML = '';
     const hrs = AUR.met.filter(s => s.t >= now - 30 * 60000).slice(0, 12);
-    hrs.forEach((s, i) => { const d = document.createElement('div'); d.className = 'cb'; d.title = Math.round(s.c) + ' % cloud cover at ' + hm(s.t);
+    hrs.forEach((s, i) => { const d = document.createElement('div'); d.className = 'cb'; d.title = L(Math.round(s.c) + ' % cloud cover at ' + hm(s.t), hm(s.t) + ' 云量 ' + Math.round(s.c) + '%');
       d.innerHTML = '<i style="height:' + Math.max(4, s.c).toFixed(0) + '%"></i><span>' + (i % 3 === 0 ? oslo(s.t).h : '') + '</span>'; cb.appendChild(d); });
-    if (!hrs.length) cb.innerHTML = '<p class="m">' + (AUR.err.met ? 'The cloud forecast is not available right now.' : 'Loading cloud forecast …') + '</p>';
+    if (!hrs.length) cb.innerHTML = '<p class="m">' + (AUR.err.met ? L('The cloud forecast is not available right now.', '云量预报暂时不可用。') : L('Loading cloud forecast …', '正在加载云量预报 …')) + '</p>';
     const upd = [AUR.ovObs, AUR.kpTime].filter(Boolean);
-    $('a-updated').textContent = upd.length ? 'Northern lights data from ' + hm(Math.max(...upd)) + '.' : '';
+    $('a-updated').textContent = upd.length ? L('Northern lights data from ' + hm(Math.max(...upd)) + '.', '极光数据时间 ' + hm(Math.max(...upd)) + '。') : '';
   }
   $('l-aurora').addEventListener('click', e => { showAurora = !showAurora; e.currentTarget.setAttribute('aria-pressed', String(showAurora)); });
   function startAurora() {
@@ -1411,9 +1540,10 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   // ---------- place switch ----------
   function applyPlaceText() {
     document.querySelectorAll('.pname').forEach(e => { e.textContent = PLACE.name; });
-    $('pcoords').textContent = num(Math.abs(LAT), 2) + '° ' + (LAT >= 0 ? 'N' : 'S') + ' ' + num(Math.abs(LON), 2) + '° ' + (LON >= 0 ? 'E' : 'W');
-    document.title = PLACE.key === 'me' && !PLACE.named ? 'Satellite Watch' : 'Satellite Watch ' + PLACE.name;
-    $('cv').setAttribute('aria-label', '3D view of satellites over ' + PLACE.name);
+    $('pcoords').textContent = ZH ? (LAT >= 0 ? '北纬 ' : '南纬 ') + num(Math.abs(LAT), 2) + '° ' + (LON >= 0 ? '东经 ' : '西经 ') + num(Math.abs(LON), 2) + '°'
+      : num(Math.abs(LAT), 2) + '° ' + (LAT >= 0 ? 'N' : 'S') + ' ' + num(Math.abs(LON), 2) + '° ' + (LON >= 0 ? 'E' : 'W');
+    document.title = ZH ? (PLACE.key === 'me' && !PLACE.named ? '卫星观测' : PLACE.name + ' 卫星观测') : PLACE.key === 'me' && !PLACE.named ? 'Satellite Watch' : 'Satellite Watch ' + PLACE.name;
+    $('cv').setAttribute('aria-label', L('3D view of satellites over ' + PLACE.name, PLACE.name + '上空卫星的 3D 视图'));
     document.querySelectorAll('.place button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === PLACE.key)));
   }
   function setPlace(key, again) {
@@ -1427,28 +1557,28 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     select(-1); force = true; lastScan = -1e15;
     applyPlaceText(); paintRail(); renderDataInfo();
     if (AUR.grid) buildAurora(); AUR.met = []; renderAurora(); loadMet();
-    predGen++; $('rows').innerHTML = '<div class="empty">Calculating passes …</div>'; PASSES = [];
+    predGen++; $('rows').innerHTML = '<div class="empty">' + L('Calculating passes …', '正在计算过境 …') + '</div>'; PASSES = [];
     predictPasses().then(predictStations);
   }
   // my location: browser geolocation (rounded to ~100 m), named with OpenStreetMap Nominatim; kept in this browser only
   const geoBtn = document.querySelector('.place button[data-place="me"]'), geoMsg = $('geomsg');
   async function placeName(lat, lon) {
-    try { const j = await getJSON('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat=' + lat + '&lon=' + lon); const a = j.address || {};
+    try { const j = await getJSON('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=' + L('en', 'zh-CN') + '&lat=' + lat + '&lon=' + lon); const a = j.address || {};
       return a.city || a.town || a.village || a.municipality || a.hamlet || a.county || a.state || null; } catch (e) { return null; }
   }
   let locating = false;
   function locate() {
     if (locating) return;
-    if (!navigator.geolocation) { geoMsg.textContent = 'Location is not available in this browser.'; return; }
+    if (!navigator.geolocation) { geoMsg.textContent = L('Location is not available in this browser.', '此浏览器不支持定位。'); return; }
     locating = true; geoBtn.setAttribute('aria-busy', 'true'); geoMsg.textContent = '';
     const done = () => { locating = false; geoBtn.removeAttribute('aria-busy'); };
     navigator.geolocation.getCurrentPosition(async pos => {
       const c = pos.coords, lat = +c.latitude.toFixed(3), lon = +c.longitude.toFixed(3), h = c.altitude != null && isFinite(c.altitude) ? Math.max(0, Math.min(9, c.altitude / 1000)) : 0.02;
       const nm = await Promise.race([placeName(lat, lon), new Promise(r => setTimeout(() => r(null), 4000))]);
-      const me = { key: 'me', name: nm || 'your location', named: !!nm, lat, lon, h }; PLACES.me = me;
+      const me = { key: 'me', name: nm || L('your location', '你的位置'), named: !!nm, lat, lon, h }; PLACES.me = me;
       try { localStorage.setItem('sv-me', JSON.stringify(me)); } catch (e) {}
       done(); setPlace('me', true);
-    }, err => { done(); geoMsg.textContent = err.code === 1 ? 'Location access was denied. Allow it for this site in your browser settings to use your location.' : 'Could not find your location. Please try again.'; },
+    }, err => { done(); geoMsg.textContent = err.code === 1 ? L('Location access was denied. Allow it for this site in your browser settings to use your location.', '定位权限被拒绝。请在浏览器设置中允许此网站访问位置。') : L('Could not find your location. Please try again.', '无法找到你的位置，请重试。'); },
     { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 });
   }
   document.querySelectorAll('.place button').forEach(b => b.addEventListener('click', () => { if (b.dataset.place === 'me') locate(); else { geoMsg.textContent = ''; setPlace(b.dataset.place); } }));
@@ -1460,7 +1590,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   function setFull(on) {
     stage.classList.toggle('full', on); document.documentElement.classList.toggle('fs-lock', on);
-    fsBtn.setAttribute('aria-pressed', String(on)); fsBtn.setAttribute('aria-label', on ? 'Close full screen' : 'Full screen'); fsBtn.title = on ? 'Close full screen' : 'Full screen';
+    fsBtn.setAttribute('aria-pressed', String(on)); const fsT = on ? L('Close full screen', '退出全屏') : L('Full screen', '全屏'); fsBtn.setAttribute('aria-label', fsT); fsBtn.title = fsT;
     resize();
   }
   function openFull() {
@@ -1500,7 +1630,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
     fetched = vInfo.fetched ? Date.parse(vInfo.fetched) : null;
     slInfo = meta.starlink || null; slFetched = slInfo && slInfo.fetched ? Date.parse(slInfo.fetched) : null;
     let vis;
-    try { vis = await getText(vInfo.file || 'visual.csv'); } catch (e) { $('loading').textContent = 'Could not find the orbit data. Please reload the page.'; return; }
+    try { vis = await getText(vInfo.file || 'visual.csv'); } catch (e) { $('loading').textContent = L('Could not find the orbit data. Please reload the page.', '找不到轨道数据，请重新加载页面。'); return; }
     addObjects(O.parseCSV(vis), 'visual'); buildBuffers();
     $('loading').hidden = true; renderChips(); renderDataInfo();
     requestAnimationFrame(frame);
@@ -1522,7 +1652,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
   if (alertBtn && alertBridge) {
     alertBtn.hidden = false;
     alertBtn.addEventListener('click', () => alertBridge.postMessage({ action: 'open', place: PLACE.key }));
-    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); if (st.text) $('a-alert-state').textContent = st.text; };
+    window.satwatchAlertState = st => { alertBtn.classList.toggle('on', !!st.on); const tx = ZH ? (st.on ? '已开启' : '纳尔维克或特罗姆瑟出现北极光时通知你') : st.text; if (tx) $('a-alert-state').textContent = tx; };
     alertBridge.postMessage({ action: 'state' });
   }
   boot();
