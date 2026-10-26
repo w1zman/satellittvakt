@@ -3,12 +3,26 @@
   const $ = id => document.getElementById(id);
   const L = window.L || ((en) => en), ZH = window.SV_LANG === 'zh';
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const PLACES = { narvik: { key: 'narvik', name: L('Narvik', '纳尔维克'), lat: 68.4385, lon: 17.4273, h: 0.02 }, tromso: { key: 'tromso', name: L('Tromsø', '特罗姆瑟'), lat: 69.6496, lon: 18.9560, h: 0.02 } };
-  try { const m = JSON.parse(localStorage.getItem('sv-me') || 'null'); if (m && isFinite(m.lat) && isFinite(m.lon) && Math.abs(m.lat) <= 90) PLACES.me = { key: 'me', name: m.name || L('your location', '你的位置'), named: !!m.named, lat: +m.lat, lon: +m.lon, h: isFinite(m.h) ? +m.h : 0.02 }; } catch (e) {}
+  // fixed places, grouped by country; each has its own time zone so clocks and pass times are local
+  const OSLO = 'Europe/Oslo', HEL = 'Europe/Helsinki';
+  const VIEWER_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || OSLO; } catch (e) { return OSLO; } })();
+  const PLACES = {
+    narvik: { key: 'narvik', cc: 'no', tz: OSLO, name: L('Narvik', '纳尔维克'), lat: 68.4385, lon: 17.4273, h: 0.02 },
+    tromso: { key: 'tromso', cc: 'no', tz: OSLO, name: L('Tromsø', '特罗姆瑟'), lat: 69.6496, lon: 18.9560, h: 0.02 },
+    rovaniemi: { key: 'rovaniemi', cc: 'fi', tz: HEL, name: L('Rovaniemi', '罗瓦涅米'), lat: 66.5039, lon: 25.7294, h: 0.09 },
+    saariselka: { key: 'saariselka', cc: 'fi', tz: HEL, name: L('Saariselkä', '萨里塞尔卡'), lat: 68.4210, lon: 27.4159, h: 0.3 },
+    levi: { key: 'levi', cc: 'fi', tz: HEL, name: L('Levi', '列维'), lat: 67.8044, lon: 24.8084, h: 0.2 },
+    inari: { key: 'inari', cc: 'fi', tz: HEL, name: L('Inari', '伊纳里'), lat: 68.9067, lon: 27.0281, h: 0.12 },
+    kilpisjarvi: { key: 'kilpisjarvi', cc: 'fi', tz: HEL, name: L('Kilpisjärvi', '基尔皮斯耶尔维'), lat: 69.0469, lon: 20.7958, h: 0.48 },
+  };
+  const COUNTRIES = [['no', L('Norway', '挪威'), ['narvik', 'tromso']], ['fi', L('Finland', '芬兰'), ['rovaniemi', 'saariselka', 'levi', 'inari', 'kilpisjarvi']]];
+  try { const m = JSON.parse(localStorage.getItem('sv-me') || 'null'); if (m && isFinite(m.lat) && isFinite(m.lon) && Math.abs(m.lat) <= 90) PLACES.me = { key: 'me', tz: VIEWER_TZ, name: m.name || L('your location', '你的位置'), named: !!m.named, lat: +m.lat, lon: +m.lon, h: isFinite(m.h) ? +m.h : 0.02 }; } catch (e) {}
   const placeLabel = p => p.key === 'me' && !p.named ? L('You are here', '你在这里') : p.name;
-  let PLACE, LAT, LON, OBS, sLa, cLa, sLo, cLo;
+  let PLACE, LAT, LON, OBS, sLa, cLa, sLo, cLo, fmtP, TZ;
+  const FMT = { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' };
   function setObserver(key) {
     PLACE = PLACES[key] || PLACES.narvik; LAT = PLACE.lat; LON = PLACE.lon; OBS = O.geodeticToEcef(LAT, LON, PLACE.h);
+    TZ = PLACE.tz || VIEWER_TZ; try { fmtP = new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: TZ }, FMT)); } catch (e) { TZ = OSLO; fmtP = new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: OSLO }, FMT)); }
     sLa = Math.sin(LAT * D2R); cLa = Math.cos(LAT * D2R); sLo = Math.sin(LON * D2R); cLo = Math.cos(LON * D2R);
   }
   const initialPlace = (() => { const h = (location.hash || '').replace('#', '').toLowerCase(); if (PLACES[h]) return h;
@@ -20,14 +34,16 @@
     : ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const dirName = a => DIRS[Math.round(((a % 360) + 360) % 360 / 22.5) % 16];
 
-  // ---------- time in Oslo ----------
+  // ---------- local time at the chosen place ----------
   const WD = ZH ? { Mon: '周一', Tue: '周二', Wed: '周三', Thu: '周四', Fri: '周五', Sat: '周六', Sun: '周日' } : { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' };
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const fmtP = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Oslo', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
   function oslo(t) { const p = {}; for (const x of fmtP.formatToParts(new Date(t))) p[x.type] = x.value; return { y: +p.year, mo: +p.month, d: +p.day, h: p.hour === '24' ? '00' : p.hour, mi: p.minute, s: p.second, wd: WD[p.weekday] || p.weekday }; }
   const hm = t => { const o = oslo(t); return o.h + ':' + o.mi; };
   const dayKey = t => { const o = oslo(t); return o.y * 10000 + o.mo * 100 + o.d; };
   const dateStr = t => { const o = oslo(t); return ZH ? o.mo + '月' + o.d + '日 ' + o.wd : o.wd + ' ' + o.d + ' ' + MON[o.mo - 1]; };
+  // "GMT+2" etc. for the place, shown only when it differs from the viewer's own clock
+  const TZF = {}; const tzOffset = (tz, t) => { try { const f = TZF[tz] || (TZF[tz] = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' })); const p = f.formatToParts(new Date(t)).find(x => x.type === 'timeZoneName'); return p ? p.value.replace('GMT', 'UTC') : ''; } catch (e) { return ''; } };
+  const tzNote = t => { const a = tzOffset(TZ, t); return a && a !== tzOffset(VIEWER_TZ, t) ? L('local time ', '当地时间 ') + a : ''; };
 
   // ---------- astronomy helpers ----------
   function enu(x, y, z) { const dx = x - OBS[0], dy = y - OBS[1], dz = z - OBS[2];
@@ -230,8 +246,8 @@
       l.position.copy(u.off).multiplyScalar(k).add(u.surf); l.scale.set(u.sx * k, u.o.h * k, 1); };
     globeG.children.forEach(each); if (placeMark) placeMark.children.forEach(each);
   }
-  const CITY_ZH = { Narvik: '纳尔维克', 'Tromsø': '特罗姆瑟', 'Bodø': '博德', Nordkapp: '北角', Oslo: '奥斯陆', Longyearbyen: '朗伊尔城', 'Reykjavík': '雷克雅未克', Stockholm: '斯德哥尔摩', Helsinki: '赫尔辛基', London: '伦敦', 'North Pole': '北极' };
-  const CITIES = [['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
+  const CITY_ZH = { Rovaniemi: '罗瓦涅米', 'Saariselkä': '萨里塞尔卡', Levi: '列维', 'Kilpisjärvi': '基尔皮斯耶尔维', Narvik: '纳尔维克', 'Tromsø': '特罗姆瑟', 'Bodø': '博德', Nordkapp: '北角', Oslo: '奥斯陆', Longyearbyen: '朗伊尔城', 'Reykjavík': '雷克雅未克', Stockholm: '斯德哥尔摩', Helsinki: '赫尔辛基', London: '伦敦', 'North Pole': '北极' };
+  const CITIES = [['Rovaniemi', 66.5039, 25.7294], ['Narvik', 68.4385, 17.4273], ['Tromsø', 69.6496, 18.956], ['Bodø', 67.280, 14.405], ['Nordkapp', 71.169, 25.784], ['Oslo', 59.913, 10.752], ['Longyearbyen', 78.223, 15.647],
     ['Reykjavík', 64.147, -21.94], ['Stockholm', 59.329, 18.069], ['Helsinki', 60.170, 24.938], ['London', 51.507, -0.128], ['North Pole', 90, 0]];
   { const cp = new Float32Array(CITIES.length * 3), cs = new Float32Array(CITIES.length), cc = new Float32Array(CITIES.length * 4);
     CITIES.forEach((c, i) => { const v = geoV(c[1], c[2], 1.004); cp.set([v.x, v.y, v.z], i * 3); cs[i] = 3.5; cc.set(c[3] ? [1, 0.78, 0.42, 1] : [0.85, 0.9, 1, 0.7], i * 4);
@@ -438,6 +454,7 @@
     const off = Math.round((t - Date.now()) / 60000);
     let dl = dateStr(t);
     if (!live) dl += ' · ' + (off === 0 ? L('now', '现在') : (off > 0 ? '+' : '−') + (Math.abs(off) >= 60 ? Math.floor(Math.abs(off) / 60) + L(' h ', ' 小时 ') : '') + (Math.abs(off) % 60) + L(' min', ' 分钟')) + (speed > 1 ? ' · ' + speed + '×' : '');
+    const tzn = tzNote(t); if (tzn) dl += ' · ' + tzn;
     $('dateline').textContent = dl;
     $('sunline').textContent = L('Sun ', '太阳 ') + num(sun.el, 1) + '° · ' + skyState(sun.el);
     const parts = [];
@@ -946,13 +963,28 @@
   }
 
   // ---------- place switch ----------
+  const FLAG = {
+    no: '<svg viewBox="0 0 22 16" aria-hidden="true"><rect width="22" height="16" fill="#BA0C2F"/><path d="M6 0h4v16H6zM0 6h22v4H0z" fill="#fff"/><path d="M7 0h2v16H7zM0 7h22v2H0z" fill="#00205B"/></svg>',
+    fi: '<svg viewBox="0 0 18 11" aria-hidden="true"><rect width="18" height="11" fill="#fff"/><path d="M5 0h3v11H5zM0 4h18v3H0z" fill="#002F6C"/></svg>',
+  };
+  const geoBtn = $('mybtn'), placeBtn = $('placebtn'), placeMenu = $('placemenu');
+  placeMenu.innerHTML = COUNTRIES.map(([cc, label, keys]) => '<div class="pm-h">' + FLAG[cc] + esc(label) + '</div>' +
+    keys.map(k => { const p = PLACES[k]; return '<button type="button" data-place="' + k + '" aria-pressed="false"><span>' + esc(p.name) + '</span><small>' +
+      (ZH ? '北纬 ' + num(p.lat, 1) + '°' : num(p.lat, 1) + '° N') + '</small></button>'; }).join('')).join('');
+  function openPlaceMenu() { placeMenu.hidden = false; placeBtn.setAttribute('aria-expanded', 'true'); const cur = placeMenu.querySelector('[aria-pressed="true"]') || placeMenu.querySelector('button'); if (cur) cur.focus({ preventScroll: true }); }
+  function closePlaceMenu(focusBack) { if (placeMenu.hidden) return; placeMenu.hidden = true; placeBtn.setAttribute('aria-expanded', 'false'); if (focusBack) placeBtn.focus({ preventScroll: true }); }
   function applyPlaceText() {
     document.querySelectorAll('.pname').forEach(e => { e.textContent = PLACE.name; });
     $('pcoords').textContent = ZH ? (LAT >= 0 ? '北纬 ' : '南纬 ') + num(Math.abs(LAT), 2) + '° ' + (LON >= 0 ? '东经 ' : '西经 ') + num(Math.abs(LON), 2) + '°'
       : num(Math.abs(LAT), 2) + '° ' + (LAT >= 0 ? 'N' : 'S') + ' ' + num(Math.abs(LON), 2) + '° ' + (LON >= 0 ? 'E' : 'W');
     document.title = ZH ? (PLACE.key === 'me' && !PLACE.named ? '卫星观测' : PLACE.name + ' 卫星观测') : PLACE.key === 'me' && !PLACE.named ? 'Satellite Watch' : 'Satellite Watch ' + PLACE.name;
     $('cv').setAttribute('aria-label', L('3D view of satellites over ' + PLACE.name, PLACE.name + '上空卫星的 3D 视图'));
-    document.querySelectorAll('.place button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === PLACE.key)));
+    geoBtn.setAttribute('aria-pressed', String(PLACE.key === 'me'));
+    const fixed = PLACE.key !== 'me';
+    placeBtn.classList.toggle('on', fixed);
+    $('placebtn-t').textContent = fixed ? PLACE.name : L('Places', '地点');
+    $('placebtn-f').innerHTML = fixed ? FLAG[PLACE.cc] || '' : '';
+    placeMenu.querySelectorAll('button[data-place]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === PLACE.key)));
   }
   function setPlace(key, again) {
     if (!PLACES[key] || (key === PLACE.key && !again)) return;
@@ -969,7 +1001,7 @@
     predictPasses().then(predictStations);
   }
   // my location: browser geolocation (rounded to ~100 m), named with OpenStreetMap Nominatim; kept in this browser only
-  const geoBtn = document.querySelector('.place button[data-place="me"]'), geoMsg = $('geomsg');
+  const geoMsg = $('geomsg');
   async function placeName(lat, lon) {
     try { const j = await getJSON('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=' + L('en', 'zh-CN') + '&lat=' + lat + '&lon=' + lon); const a = j.address || {};
       return a.city || a.town || a.village || a.municipality || a.hamlet || a.county || a.state || null; } catch (e) { return null; }
@@ -989,7 +1021,11 @@
     }, err => { done(); geoMsg.textContent = err.code === 1 ? L('Location access was denied. Allow it for this site in your browser settings to use your location.', '定位权限被拒绝。请在浏览器设置中允许此网站访问位置。') : L('Could not find your location. Please try again.', '无法找到你的位置，请重试。'); },
     { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 });
   }
-  document.querySelectorAll('.place button').forEach(b => b.addEventListener('click', () => { if (b.dataset.place === 'me') locate(); else { geoMsg.textContent = ''; setPlace(b.dataset.place); } }));
+  geoBtn.addEventListener('click', () => { closePlaceMenu(); locate(); });
+  placeBtn.addEventListener('click', e => { e.stopPropagation(); placeMenu.hidden ? openPlaceMenu() : closePlaceMenu(); });
+  placeMenu.addEventListener('click', e => { const b = e.target.closest('button[data-place]'); if (!b) return; geoMsg.textContent = ''; closePlaceMenu(true); setPlace(b.dataset.place); });
+  document.addEventListener('click', e => { if (!placeMenu.hidden && !e.target.closest('#placemenu')) closePlaceMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !placeMenu.hidden) closePlaceMenu(true); });
   window.addEventListener('hashchange', () => { const h = location.hash.replace('#', '').toLowerCase(); if (PLACES[h]) setPlace(h); });
   applyPlaceText();
 

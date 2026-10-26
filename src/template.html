@@ -183,9 +183,8 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 .alertbtn .bell .dot { display: none; }
 .src a { color: var(--frost); }
 
-.place button { display: inline-flex; align-items: center; gap: 6px; }
-.place button svg { width: 14px; height: 14px; flex: none; }
-.place button[aria-busy="true"] svg { animation: pulse 1s ease-in-out infinite; }
+#mybtn svg { width: 14px; height: 14px; flex: none; }
+#mybtn[aria-busy="true"] svg { animation: pulse 1s ease-in-out infinite; }
 .geomsg { margin: 2px 0 0; font-size: 13px; color: var(--warn); }
 .geomsg:empty { display: none; }
 .lookbar { position: absolute; bottom: 56px; left: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; max-width: calc(100% - 20px); pointer-events: none; }
@@ -200,10 +199,29 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-heig
 .stage.full .lookbar { bottom: calc(max(12px, env(safe-area-inset-bottom, 0px)) + 54px); left: max(10px, env(safe-area-inset-left, 0px)); }
 .toprow { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
 .place { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
-.place button { font: 600 13px var(--f-body); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
-.place button[aria-pressed="true"] { background: var(--sun); color: var(--ink); }
-.place button:hover:not([aria-pressed="true"]) { color: var(--frost); }
 @media (prefers-reduced-motion: reduce) { .livepill i { animation: none; } }
+/* place picker: My location + a menu of places grouped by country */
+.place { position: relative; }
+.place > button, .pickwrap > button { font: 600 13px var(--f-body); color: var(--mist); background: transparent; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.place > button[aria-pressed="true"], #placebtn.on { background: var(--sun); color: var(--ink); }
+.place > button:hover:not([aria-pressed="true"]), #placebtn:not(.on):hover { color: var(--frost); }
+#placebtn { padding-right: 11px; }
+#placebtn .chev { width: 13px; height: 13px; flex: none; transition: transform .15s; }
+#placebtn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.pf:empty { display: none; }
+.pf svg, .pm-h svg { width: 18px; height: 12.5px; border-radius: 2px; display: block; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.pickwrap { position: relative; display: inline-flex; }
+.placemenu { position: absolute; top: calc(100% + 8px); right: -4px; z-index: 50; min-width: 236px; max-height: min(70vh, 460px); overflow: auto; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,.55); display: flex; flex-direction: column; gap: 1px; }
+.placemenu[hidden] { display: none; }
+.pm-h { display: flex; align-items: center; gap: 8px; font-family: var(--f-data); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--mist); padding: 9px 10px 5px; }
+.pm-h:not(:first-child) { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 11px; }
+.placemenu button { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; width: 100%; font: 500 14.5px var(--f-body); color: var(--frost); background: transparent; border: 0; border-radius: 9px; padding: 9px 10px; cursor: pointer; text-align: left; }
+.placemenu button small { font-family: var(--f-data); font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; }
+.placemenu button:hover, .placemenu button:focus-visible { background: rgba(228,236,247,.07); outline: none; }
+.placemenu button[aria-pressed="true"] { color: var(--sun); }
+.placemenu button[aria-pressed="true"] span::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--sun); margin: 0 8px 2px 0; }
+@media (max-width: 520px) { .placemenu { right: auto; left: -80px; } }
+html.lang-zh .pm-h { letter-spacing: .02em; }
 /* language switcher */
 .tools { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .lang { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
@@ -226,9 +244,11 @@ html.lang-zh h1 { line-height: 1.1; }
         <button type="button" data-lang="zh" aria-pressed="false" lang="zh-CN"><svg viewBox="0 0 30 20" aria-hidden="true"><defs><path id="fl-cn-s" d="M0,-1 .588,.809-.951-.309H.951L-.588,.809z" fill="#FFDE00"/></defs><rect width="30" height="20" fill="#EE1C25"/><use href="#fl-cn-s" transform="translate(5,5) scale(3)"/><use href="#fl-cn-s" transform="translate(10,2) rotate(23.04)"/><use href="#fl-cn-s" transform="translate(12,4) rotate(45.87)"/><use href="#fl-cn-s" transform="translate(12,7) rotate(69.95)"/><use href="#fl-cn-s" transform="translate(10,9) rotate(20.66)"/></svg>中文</button>
       </div>
       <div class="place" role="group" aria-label="Choose place" data-i18n-aria="placeGroup">
-        <button type="button" data-place="me" aria-pressed="false" title="Use my location" data-i18n-title="myLocTitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span data-i18n="myLoc">My location</span></button>
-        <button type="button" data-place="narvik" aria-pressed="true" data-i18n="narvik">Narvik</button>
-        <button type="button" data-place="tromso" aria-pressed="false" data-i18n="tromso">Tromsø</button>
+        <button type="button" id="mybtn" aria-pressed="false" title="Use my location" data-i18n-title="myLocTitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span data-i18n="myLoc">My location</span></button>
+        <div class="pickwrap">
+          <button type="button" id="placebtn" class="on" aria-haspopup="true" aria-expanded="false" aria-controls="placemenu"><span class="pf" id="placebtn-f"></span><span id="placebtn-t">Narvik</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="placemenu" id="placemenu" hidden></div>
+        </div>
       </div>
       </div>
     </div>
